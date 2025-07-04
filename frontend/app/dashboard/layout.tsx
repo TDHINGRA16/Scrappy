@@ -17,6 +17,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     // Check if user is authenticated
@@ -40,6 +41,7 @@ export default function DashboardLayout({
         }
 
         setIsLoading(false)
+        setIsMounted(true)
       } catch (err) {
         localStorage.removeItem("token")
         router.push("/login")
@@ -68,17 +70,23 @@ export default function DashboardLayout({
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="font-bold">
               <div style={{ height: '40px', width: '120px' }}>
-                <TextPressure
-                  text="SCRAPPY"
-                  flex={true}
-                  alpha={false}
-                  stroke={false}
-                  width={true}
-                  weight={true}
-                  italic={true}
-                  textColor="#000000"
-                  minFontSize={18}
-                />
+                {isMounted ? (
+                  <TextPressure
+                    text="SCRAPPY"
+                    flex={true}
+                    alpha={false}
+                    stroke={false}
+                    width={true}
+                    weight={true}
+                    italic={true}
+                    textColor="#000000"
+                    minFontSize={18}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <span className="text-lg font-bold text-black">SCRAPPY</span>
+                  </div>
+                )}
               </div>
             </Link>
             <nav className="hidden md:flex gap-6">

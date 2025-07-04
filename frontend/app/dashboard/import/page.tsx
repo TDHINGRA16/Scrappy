@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +24,11 @@ export default function ImportPage() {
   const [contactMethod, setContactMethod] = useState("email")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleCsvUpload = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,17 +106,23 @@ export default function ImportPage() {
     <div className="space-y-6 bg-white min-h-screen p-6">
       <div>
         <div style={{ height: '50px', width: '250px', marginBottom: '10px' }}>
-          <TextPressure
-            text="IMPORT DATA"
-            flex={true}
-            alpha={false}
-            stroke={false}
-            width={true}
-            weight={true}
-            italic={true}
-            textColor="#000000"
-            minFontSize={20}
-          />
+          {isMounted ? (
+            <TextPressure
+              text="IMPORT DATA"
+              flex={true}
+              alpha={false}
+              stroke={false}
+              width={true}
+              weight={true}
+              italic={true}
+              textColor="#000000"
+              minFontSize={20}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <h1 className="text-2xl font-bold text-black">IMPORT DATA</h1>
+            </div>
+          )}
         </div>
         <p className="text-muted-foreground">Import contacts from CSV or Google Sheets</p>
       </div>

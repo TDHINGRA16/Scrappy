@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,17 +59,23 @@ export default function LoginPage() {
     <div className="flex h-screen flex-col items-center justify-center bg-white">
       {/* SCRAPPY title centered on page */}
       <div style={{ height: '80px', width: '300px', marginBottom: '40px' }}>
-        <TextPressure
-          text="SCRAPPY"
-          flex={true}
-          alpha={false}
-          stroke={false}
-          width={true}
-          weight={true}
-          italic={true}
-          textColor="#000000"
-          minFontSize={32}
-        />
+        {isMounted ? (
+          <TextPressure
+            text="SCRAPPY"
+            flex={true}
+            alpha={false}
+            stroke={false}
+            width={true}
+            weight={true}
+            italic={true}
+            textColor="#000000"
+            minFontSize={32}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <h1 className="text-4xl font-bold text-black">SCRAPPY</h1>
+          </div>
+        )}
       </div>
       
       {/* Login card */}
@@ -82,11 +93,19 @@ export default function LoginPage() {
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input 
+                key="email-input"
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
+                key="password-input"
                 id="password"
                 type="password"
                 value={password}
@@ -96,7 +115,12 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              key="login-button"
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+            >
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </CardFooter>

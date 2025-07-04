@@ -3,7 +3,7 @@
 import type React from "react"
 import type { SearchRequest, SearchJobResponse } from "@/lib/types"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,11 @@ export default function SearchPage() {
   )
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,17 +75,23 @@ export default function SearchPage() {
     <div className="space-y-6 bg-white min-h-screen p-6">
       <div>
         <div style={{ height: '50px', width: '300px', marginBottom: '10px' }}>
-          <TextPressure
-            text="CREATE SEARCH JOB"
-            flex={true}
-            alpha={false}
-            stroke={false}
-            width={true}
-            weight={true}
-            italic={true}
-            textColor="#000000"
-            minFontSize={18}
-          />
+          {isMounted ? (
+            <TextPressure
+              text="CREATE SEARCH JOB"
+              flex={true}
+              alpha={false}
+              stroke={false}
+              width={true}
+              weight={true}
+              italic={true}
+              textColor="#000000"
+              minFontSize={18}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <h1 className="text-xl font-bold text-black">CREATE SEARCH JOB</h1>
+            </div>
+          )}
         </div>
         <p className="text-muted-foreground">Set up a new scraping job to find and contact businesses</p>
       </div>

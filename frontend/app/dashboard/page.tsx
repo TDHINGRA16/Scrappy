@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -52,6 +53,7 @@ export default function DashboardPage() {
         setError(err instanceof Error ? err.message : "Failed to fetch jobs")
       } finally {
         setIsLoading(false)
+        setIsMounted(true)
       }
     }
 
@@ -68,17 +70,23 @@ export default function DashboardPage() {
     <div className="space-y-6 bg-white min-h-screen p-6">
       <div className="flex justify-between items-center">
         <div style={{ height: '50px', width: '200px' }}>
-          <TextPressure
-            text="DASHBOARD"
-            flex={true}
-            alpha={false}
-            stroke={false}
-            width={true}
-            weight={true}
-            italic={true}
-            textColor="#000000"
-            minFontSize={20}
-          />
+          {isMounted ? (
+            <TextPressure
+              text="DASHBOARD"
+              flex={true}
+              alpha={false}
+              stroke={false}
+              width={true}
+              weight={true}
+              italic={true}
+              textColor="#000000"
+              minFontSize={20}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <h1 className="text-2xl font-bold text-black">DASHBOARD</h1>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/search">

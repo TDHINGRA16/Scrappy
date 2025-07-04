@@ -65,6 +65,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [exportFormat, setExportFormat] = useState("csv")
+  const [isMounted, setIsMounted] = useState(false)
 
   const fetchJobStatus = async () => {
     try {
@@ -131,6 +132,10 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
 
     return () => clearInterval(interval)
   }, [resolvedParams.id]) // Removed jobStatus?.status from the dependency array
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleExport = () => {
     const token = localStorage.getItem("token")
@@ -204,17 +209,23 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
       <div className="flex justify-between items-center">
         <div>
           <div style={{ height: '50px', width: '300px', marginBottom: '10px' }}>
-            <TextPressure
-              text={`JOB #${jobStatus.job_id}`}
-              flex={true}
-              alpha={false}
-              stroke={false}
-              width={true}
-              weight={true}
-              italic={true}
-              textColor="#000000"
-              minFontSize={18}
-            />
+            {isMounted ? (
+              <TextPressure
+                text={`JOB #${jobStatus.job_id}`}
+                flex={true}
+                alpha={false}
+                stroke={false}
+                width={true}
+                weight={true}
+                italic={true}
+                textColor="#000000"
+                minFontSize={18}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <h1 className="text-xl font-bold text-black">{`JOB #${jobStatus.job_id}`}</h1>
+              </div>
+            )}
           </div>
           {jobStatus.query && (
             <h2 className="text-lg font-semibold mb-2">{jobStatus.query}</h2>
