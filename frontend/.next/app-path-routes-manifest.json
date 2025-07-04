@@ -1,0 +1,19 @@
+{
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/export/jobs/[id]/status/route": "/api/export/jobs/[id]/status",
+  "/api/auth/verify/route": "/api/auth/verify",
+  "/api/export/excel/[id]/route": "/api/export/excel/[id]",
+  "/api/export/jobs/route": "/api/export/jobs",
+  "/api/search/route": "/api/search",
+  "/api/import/google-sheets/route": "/api/import/google-sheets",
+  "/api/import/csv/route": "/api/import/csv",
+  "/_not-found/page": "/_not-found",
+  "/api/export/json/[id]/route": "/api/export/json/[id]",
+  "/api/export/csv/[id]/route": "/api/export/csv/[id]",
+  "/page": "/",
+  "/login/page": "/login",
+  "/dashboard/page": "/dashboard",
+  "/dashboard/search/page": "/dashboard/search",
+  "/dashboard/import/page": "/dashboard/import",
+  "/dashboard/jobs/[id]/page": "/dashboard/jobs/[id]"
+}

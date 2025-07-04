@@ -1,0 +1,21 @@
+1:"$Sreact.fragment"
+2:I[2923,["177","static/chunks/app/layout-ef74b96261a571b0.js"],"ThemeProvider"]
+3:I[1063,[],""]
+4:I[1483,[],""]
+5:I[326,[],"ClientSegmentRoot"]
+6:I[8937,["741","static/chunks/741-360e6dbbec08cdf3.js","831","static/chunks/831-807d156fcd502970.js","954","static/chunks/app/dashboard/layout-5c4c6ac5828adeec.js"],"default"]
+8:I[5234,[],"ClientPageRoot"]
+9:I[6750,["741","static/chunks/741-360e6dbbec08cdf3.js","827","static/chunks/827-1ff024e3ccfd6e90.js","831","static/chunks/831-807d156fcd502970.js","105","static/chunks/app/dashboard/page-1e1f96f377ebaf94.js"],"default"]
+c:I[5125,[],"OutletBoundary"]
+f:I[5125,[],"ViewportBoundary"]
+11:I[5125,[],"MetadataBoundary"]
+13:I[1954,[],""]
+:HL["/_next/static/css/c842ce15c453c5ee.css","style"]
+0:{"P":null,"b":"mqViscSlEhnKQ2OFRMm_0","p":"","c":["","dashboard"],"i":false,"f":[[["",{"children":["dashboard",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/c842ce15c453c5ee.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","children":["$","body",null,{"className":"__className_e8ce0c","children":["        ",["$","$L2",null,{"attribute":"class","defaultTheme":"light","enableSystem":true,"disableTransitionOnChange":true,"storageKey":"scrappy-theme","children":["$","$L3",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L4",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]]}]}]]}],{"children":["dashboard",["$","$1","c",{"children":[null,["$","$L5",null,{"Component":"$6","slots":{"children":["$","$L3",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L4",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]},"params":{},"promise":"$@7"}]]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$L8",null,{"Component":"$9","searchParams":{},"params":"$0:f:0:1:2:children:1:props:children:1:props:params","promises":["$@a","$@b"]}],"$undefined",null,["$","$Lc",null,{"children":["$Ld","$Le",null]}]]}],{},null,false]},[null,[],[]],false]},null,false],["$","$1","h",{"children":[null,["$","$1","S3J1isEdXr7OidkOa2U_T",{"children":[["$","$Lf",null,{"children":"$L10"}],null]}],["$","$L11",null,{"children":"$L12"}]]}],false]],"m":"$undefined","G":["$13","$undefined"],"s":false,"S":true}
+7:{}
+a:{}
+b:{}
+10:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+d:null
+e:null
+12:[["$","title","0",{"children":"SCRAPPY"}],["$","meta","1",{"name":"description","content":"Web scraping and automated outreach tool powered by Selenium"}]]
