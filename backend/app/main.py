@@ -24,7 +24,13 @@ app = FastAPI(title="Web Scraper & Outreach Tool")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",  # Next.js default port
+        "http://127.0.0.1:3000",  # Next.js default port (IP)
+        "http://localhost:8000",  # Local backend port
+        "http://127.0.0.1:8000",  # Local backend port (IP)
+        "https://scrappyy.vercel.app",  # Production frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -7,7 +7,7 @@ import type {
   ApiError
 } from "./types"
 
-const API_BASE_URL = "http://127.0.0.1:8000"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 
 class ApiClient {
   private getAuthHeaders(): HeadersInit {
@@ -28,14 +28,21 @@ class ApiClient {
       },
     }
 
-    const response = await fetch(url, config)
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: "Request failed" }))
-      throw new Error(error.detail || `HTTP error! status: ${response.status}`)
+    try {
+      const response = await fetch(url, config)
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Request failed" }))
+        throw new Error(error.detail || `HTTP error! status: ${response.status}`)
+      }
+      
+      return response.json()
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Cannot connect to backend server. Please check if the backend is running.')
+      }
+      throw error
     }
-    
-    return response.json()
   }
 
   async get<T>(endpoint: string): Promise<T> {

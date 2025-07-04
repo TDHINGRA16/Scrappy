@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     
+    # Frontend Configuration
+    FRONTEND_URL: str = "https://scrappyy.vercel.app"
+    
     # Single User Credentials (for simple auth)
     ADMIN_EMAIL: str = "admin@scrappy.com"
     ADMIN_PASSWORD: str = "change-this-password"
