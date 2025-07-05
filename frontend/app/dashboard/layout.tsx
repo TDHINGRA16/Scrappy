@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Search, Home, ImportIcon as FileImport, LogOut, Briefcase } from "lucide-react"
+import { Search, Home, ImportIcon as FileImport, LogOut } from "lucide-react"
 import { Suspense } from "react"
 import TextPressure from "@/components/TextPressure"
 
@@ -31,7 +31,6 @@ export default function DashboardLayout({
     const verifyToken = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
-          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -100,9 +99,6 @@ export default function DashboardLayout({
               <Link href="/dashboard/import" className="text-sm font-medium">
                 Import
               </Link>
-              <Link href="/dashboard/jobs" className="text-sm font-medium">
-                Jobs
-              </Link>
             </nav>
           </div>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -130,12 +126,6 @@ export default function DashboardLayout({
               <Button variant="outline" className="w-full justify-start">
                 <FileImport className="mr-2 h-4 w-4" />
                 Import
-              </Button>
-            </Link>
-            <Link href="/dashboard/jobs">
-              <Button variant="outline" className="w-full justify-start">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Jobs
               </Button>
             </Link>
           </div>

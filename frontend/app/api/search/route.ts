@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     // Forward the request to the actual API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search/`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
