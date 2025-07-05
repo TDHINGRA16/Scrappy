@@ -224,3 +224,8 @@ htmlcov/
 # Alembic
 # Keep alembic folder but ignore any local migration files that might contain sensitive data
 # alembic/versions/*.py  # Uncomment if you don't want to track migration files
+samconfig.toml
+template.yaml
+.aws-sam
+dockerfile
+.dockerignore

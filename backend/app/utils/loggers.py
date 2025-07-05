@@ -1,5 +1,6 @@
 import logging
 import sys
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -160,10 +161,15 @@ class PerformanceLogger:
             self.logger.warning(f"Timer {timer_id} not found for operation {operation}")
 
 # Create default logger instance
+# Use /tmp/logs for Lambda environment, logs/ for local development
+is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
+log_dir = "/tmp/logs" if is_lambda else "logs"
+log_file_path = f"{log_dir}/scrappy.log"
+
 logger = setup_logger(
     name="scrappy",
     level="INFO",
-    log_file="logs/scrappy.log"
+    log_file=log_file_path
 )
 
 # Create specialized loggers
