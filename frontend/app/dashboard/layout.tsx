@@ -31,6 +31,7 @@ export default function DashboardLayout({
     const verifyToken = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },
