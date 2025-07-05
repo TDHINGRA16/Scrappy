@@ -45,7 +45,7 @@ export default function ImportPage() {
       const formData = new FormData()
       formData.append("file", file)
 
-      const response = await fetch("/api/import/csv", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/import/csv`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -75,7 +75,7 @@ export default function ImportPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch("/api/import/google-sheets", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/import/google-sheets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const formData = await request.formData()
 
     // Forward the request to the actual API
-    const response = await fetch("http://127.0.0.1:8000/api/import/csv", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/import/csv`, {
       method: "POST",
       headers: {
         Authorization: authHeader,

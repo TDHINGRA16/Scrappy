@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     }
 
     // Forward the request to the actual API using POST method as expected by backend
-    const response = await fetch("http://127.0.0.1:8000/api/auth/verify", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
       method: "POST",
       headers: {
         Authorization: authHeader,

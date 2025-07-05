@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     // Forward the request to the actual API
-    const response = await fetch("http://127.0.0.1:8000/api/import/google-sheets", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/import/google-sheets`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

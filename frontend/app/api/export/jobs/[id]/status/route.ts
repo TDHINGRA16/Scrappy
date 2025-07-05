@@ -13,7 +13,7 @@ export async function GET(
     }
 
     // Forward the request to the actual API
-    const response = await fetch(`http://127.0.0.1:8000/api/export/jobs/${id}/status`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/jobs/${id}/status`, {
       headers: {
         Authorization: authHeader,
       },

@@ -16,7 +16,7 @@ export async function GET(
     const includeMessages = searchParams.get("include_messages") || "false"
 
     // Forward the request to the actual API
-    const response = await fetch(`http://127.0.0.1:8000/api/export/json/${id}?include_messages=${includeMessages}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/json/${id}?include_messages=${includeMessages}`, {
       headers: {
         Authorization: authHeader,
       },

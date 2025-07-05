@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const { email, password } = body
 
     // Forward the request to the actual API
-    const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

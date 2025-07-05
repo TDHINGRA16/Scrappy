@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const size = searchParams.get("size") || "10"
 
     // Forward the request to the actual API
-    const response = await fetch(`http://127.0.0.1:8000/api/export/jobs?page=${page}&size=${size}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/jobs?page=${page}&size=${size}`, {
       headers: {
         Authorization: authHeader,
       },
