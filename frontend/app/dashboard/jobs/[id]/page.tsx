@@ -70,7 +70,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   const fetchJobStatus = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/export/jobs/${resolvedParams.id}/status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/jobs/${resolvedParams.id}/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -97,7 +97,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   const fetchJobResults = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`/api/export/json/${resolvedParams.id}?include_messages=true`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/export/json/${resolvedParams.id}?include_messages=true`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
