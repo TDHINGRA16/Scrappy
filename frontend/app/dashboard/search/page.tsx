@@ -41,7 +41,7 @@ export default function SearchPage() {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/search`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
