@@ -55,3 +55,13 @@ async def ensure_db_connection():
             if attempt == max_retries - 1:
                 raise e
             await asyncio.sleep(1)  # Wait 1 second before retry
+
+async def init_db():
+    """Initialize database by creating all tables"""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        raise e

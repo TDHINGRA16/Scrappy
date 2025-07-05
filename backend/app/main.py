@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from app.routers import search, export, auth
 from app.dependencies import require_auth
 from app.config import settings
+from app.database import init_db
 
 # Windows-specific event loop fix - MUST BE AT TOP LEVEL
 if sys.platform == "win32":
@@ -21,6 +22,12 @@ if sys.platform == "win32":
 import_module = importlib.import_module('app.routers.import')
 
 app = FastAPI(title="Web Scraper & Outreach Tool")
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    await init_db()
 
 app.add_middleware(
     CORSMiddleware,
