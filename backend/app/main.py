@@ -8,6 +8,7 @@ from app.routers import search, export, auth
 from app.dependencies import require_auth
 from app.config import settings
 from app.database import init_db
+from app.database import init_db
 
 # Windows-specific event loop fix - MUST BE AT TOP LEVEL
 if sys.platform == "win32":
@@ -47,9 +48,10 @@ app.add_middleware(
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(search.router, prefix="/api/search", dependencies=[Depends(require_auth)])
+app.include_router(search.router, prefix="/api/search")
 app.include_router(import_module.router, prefix="/api/import", dependencies=[Depends(require_auth)])
 app.include_router(export.router, prefix="/api/export", dependencies=[Depends(require_auth)])
+
 
 @app.get("/")
 async def root():

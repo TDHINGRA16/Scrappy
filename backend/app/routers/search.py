@@ -10,6 +10,7 @@ from app.services.google_sheets import sheets_service
 from app.models import SearchJob, ScrapeResult
 from app.utils.loggers import logger
 from app.utils.rate_limiter import wait_for_rate_limit
+from app.dependencies import require_auth
 
 router = APIRouter()
 
@@ -17,7 +18,8 @@ router = APIRouter()
 async def start_search(
     request: SearchRequest, 
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_auth)
 ):
     try:
         job = SearchJob(
@@ -222,7 +224,7 @@ def preprocess_business_query(query: str) -> str:
     return query
 
 @router.get("/{job_id}")
-async def get_search_job(job_id: int, db: AsyncSession = Depends(get_db)):
+async def get_search_job(job_id: int, db: AsyncSession = Depends(get_db), _: dict = Depends(require_auth)):
     """Get details of a search job including results"""
     result = await db.execute(
         select(SearchJob).where(SearchJob.id == job_id)
