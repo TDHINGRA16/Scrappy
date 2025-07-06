@@ -7,17 +7,25 @@ class Settings(BaseSettings):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Auto-detect if running in Docker and adjust database URL
+        # Auto-detect environment and adjust database URL
         if self._is_running_in_docker():
             self.DATABASE_URL = "postgresql+asyncpg://postgres:password@db:5432/scraper_db"
+        elif os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
+            # In AWS Lambda, use environment variable for database URL or default to localhost
+            # The actual database URL should be set via environment variable
+            if os.environ.get('DATABASE_URL'):
+                self.DATABASE_URL = os.environ.get('DATABASE_URL')
+            else:
+                # Fallback for Lambda - should be overridden by environment variable
+                self.DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/scraper_db"
     
     def _is_running_in_docker(self) -> bool:
         """Check if the application is running in a Docker container"""
         # Check for Docker environment indicators
+        # Note: AWS Lambda is NOT a Docker container for database connectivity
         return (
             os.path.exists('/.dockerenv') or  # Docker creates this file
-            os.environ.get('DOCKER_CONTAINER') == 'true' or  # Custom env var
-            os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None  # Lambda environment
+            os.environ.get('DOCKER_CONTAINER') == 'true'  # Custom env var
         )
     
     TWILIO_ACCOUNT_SID: str = ""
