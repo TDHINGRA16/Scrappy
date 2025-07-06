@@ -207,7 +207,10 @@ class GoogleSheetsService:
             # Create a new spreadsheet
             from datetime import datetime
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            sheet_title = f"ScrapeJob_{job_id}_{query.replace(' ', '_')}_{timestamp}"
+            # Clean query for worksheet name (remove special characters)
+            clean_query = query.replace('/', '_').replace('\\', '_').replace(':', '_').replace('*', '_').replace('?', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_')
+            clean_query = clean_query[:30]  # Limit length
+            sheet_title = f"ScrapeJob_{job_id}_{clean_query}_{timestamp}"
             
             # Create the spreadsheet
             spreadsheet = self.client.create(sheet_title)
@@ -395,14 +398,17 @@ class GoogleSheetsService:
             # Open the spreadsheet
             spreadsheet = self.client.open_by_key(sheet_id)
             
-            # Create worksheet name with job info
+            # Create worksheet name with job info and search query
             import datetime
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            worksheet_name = f"Job_{job_id}_{timestamp}"
+            # Clean query for worksheet name (remove special characters)
+            clean_query = query.replace('/', '_').replace('\\', '_').replace(':', '_').replace('*', '_').replace('?', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_')
+            clean_query = clean_query[:30]  # Limit length
+            worksheet_name = f"Job_{job_id}_{clean_query}_{timestamp}"
             
             # Ensure worksheet name is valid (max 100 chars)
             if len(worksheet_name) > 100:
-                worksheet_name = f"Job_{job_id}_{timestamp[:8]}"
+                worksheet_name = f"Job_{job_id}_{clean_query[:10]}_{timestamp[:8]}"
             
             # Create new worksheet
             try:

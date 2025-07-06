@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, ImportIcon as FileImport } from "lucide-react"
+import { Search, ImportIcon as FileImport, Loader2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import TextPressure from "@/components/TextPressure"
 
@@ -167,6 +167,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={getStatusColor(job.status) as any}>{job.status}</Badge>
+                    {job.status.includes("processing") && (
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                    )}
                     <Link href={`/dashboard/jobs/${job.id}`}>
                       <Button variant="ghost" size="sm">
                         View

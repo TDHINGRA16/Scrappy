@@ -11,10 +11,11 @@ from app.models import SearchJob, ScrapeResult
 from app.utils.loggers import logger
 from app.utils.rate_limiter import wait_for_rate_limit
 from app.dependencies import require_auth
+from datetime import datetime
 
 router = APIRouter()
 
-@router.post("/", response_model=SearchJobResponse)
+@router.post("", response_model=SearchJobResponse)
 async def start_search(
     request: SearchRequest, 
     background_tasks: BackgroundTasks,
@@ -28,13 +29,18 @@ async def start_search(
             source=request.source,
             mode=request.mode,
             message_type=request.message_type,
-            prewritten_message=request.prewritten_message
+            prewritten_message=request.prewritten_message,
+            status="processing"  # Set initial status
         )
         db.add(job)
         await db.commit()
         await db.refresh(job)
         
+        # Start the background task but don't wait for it
         background_tasks.add_task(process_search_job, job.id, request)
+        
+        # Return immediately with job ID and processing status
+        logger.info(f"Started search job {job.id} for query: '{request.query}'")
         return {"job_id": job.id, "status": "processing_started"}
     
     except Exception as e:
@@ -45,25 +51,34 @@ async def start_search(
 async def process_search_job(job_id: int, request: SearchRequest):
     """Process a search job using Google Maps scraping"""
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(SearchJob).where(SearchJob.id == job_id))
-        job = result.scalar_one_or_none()
-        
-        if not job:
-            logger.error(f"Job {job_id} not found")
-            return
-        
         try:
+            # Get the job and update status to processing immediately
+            result = await db.execute(select(SearchJob).where(SearchJob.id == job_id))
+            job = result.scalar_one_or_none()
+            
+            if not job:
+                logger.error(f"Job {job_id} not found")
+                return
+            
+            # Update status to processing
+            job.status = "processing"
+            await db.commit()
+            logger.info(f"Started processing job {job_id}")
+            
             # Preprocess query for better business results
             processed_query = preprocess_business_query(request.query)
             logger.info(f"Searching for: '{processed_query}'")
-              # Use Google Maps scraping
+            
+            # Use Google Maps scraping
             results = await scrape_google_maps(processed_query, max_results=request.limit)
             
             if not results:
                 logger.warning(f"No Google Maps results found for query: '{processed_query}'")
                 job.status = f"completed - no results found for '{request.query}'"
                 await db.commit()
-                return            # Save results to database with deduplication
+                return
+                
+            # Save results to database with deduplication
             saved_results = 0
             seen_entries = set()
             
@@ -85,7 +100,8 @@ async def process_search_job(job_id: int, request: SearchRequest):
                         logger.info(f"Skipping duplicate entry: {name}")
                         continue
                     
-                    seen_entries.add(unique_key)                    
+                    seen_entries.add(unique_key)
+                    
                     # Check if this business already exists in the database for this job
                     existing_check = await db.execute(
                         select(ScrapeResult).where(
@@ -134,11 +150,14 @@ async def process_search_job(job_id: int, request: SearchRequest):
                         introduction=business.get('introduction', ''),
                         
                         # Metadata
-                        source="Google Maps"                    )
+                        source="Google Maps"
+                    )
                     
                     db.add(scrape_result)
                     saved_results += 1
-                      # Add small delay between saves                    await asyncio.sleep(random.uniform(0.1, 0.3))
+                    
+                    # Add small delay between saves
+                    await asyncio.sleep(random.uniform(0.1, 0.3))
                     
                 except Exception as e:
                     # Check if it's a unique constraint violation (duplicate)
@@ -155,24 +174,30 @@ async def process_search_job(job_id: int, request: SearchRequest):
                 
                 # Save results to Google Sheets
                 try:
-                    # Convert results to the format expected by Google Sheets
+                    # Get the final results from database (which include emails)
+                    final_results_query = await db.execute(
+                        select(ScrapeResult).where(ScrapeResult.job_id == job_id)
+                    )
+                    final_results = final_results_query.scalars().all()
+                    
+                    # Convert database results to the format expected by Google Sheets
                     sheet_results = []
-                    for business in results:
+                    for result in final_results:
                         sheet_results.append({
-                            'Name': business.get('name', 'Unknown Business'),
-                            'Website': business.get('website', ''),
-                            'Email': business.get('email', ''),
-                            'Phone': business.get('phone', ''),
-                            'Address': business.get('address', ''),
-                            'Reviews Count': business.get('reviews_count', 0),
-                            'Reviews Average': business.get('reviews_average', 0.0),
-                            'Store Shopping': business.get('store_shopping', 'No'),
-                            'In Store Pickup': business.get('in_store_pickup', 'No'),
-                            'Store Delivery': business.get('store_delivery', 'No'),
-                            'Place Type': business.get('place_type', ''),
-                            'Opening Hours': business.get('opening_hours', ''),
-                            'Introduction': business.get('introduction', ''),
-                            'Source': 'Google Maps'
+                            'Name': result.name,
+                            'Website': result.website,
+                            'Email': result.email,  # This will now include the extracted emails
+                            'Phone': result.phone,
+                            'Address': result.address,
+                            'Reviews Count': result.reviews_count,
+                            'Reviews Average': result.reviews_average,
+                            'Store Shopping': result.store_shopping,
+                            'In Store Pickup': result.in_store_pickup,
+                            'Store Delivery': result.store_delivery,
+                            'Place Type': result.place_type,
+                            'Opening Hours': result.opening_hours,
+                            'Introduction': result.introduction,
+                            'Source': result.source
                         })
                     
                     # Save to Google Sheets
@@ -247,7 +272,8 @@ async def get_search_job(job_id: int, db: AsyncSession = Depends(get_db), _: dic
         "source": job.source,
         "mode": job.mode,
         "message_type": job.message_type,
-        "prewritten_message": job.prewritten_message,        "created_at": job.created_at,
+        "prewritten_message": job.prewritten_message,
+        "created_at": job.created_at,
         "status": job.status,
         "results": [
             {
@@ -270,3 +296,98 @@ async def get_search_job(job_id: int, db: AsyncSession = Depends(get_db), _: dic
             for r in results
         ]
     }
+
+@router.get("/{job_id}/progress")
+async def get_job_progress(job_id: int, db: AsyncSession = Depends(get_db), _: dict = Depends(require_auth)):
+    """Get detailed progress information for a job"""
+    result = await db.execute(
+        select(SearchJob).where(SearchJob.id == job_id)
+    )
+    job = result.scalar_one_or_none()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Search job not found")
+    
+    # Get current results count
+    results_count_query = await db.execute(
+        select(ScrapeResult).where(ScrapeResult.job_id == job_id)
+    )
+    results_count = len(results_count_query.scalars().all())
+    
+    # Calculate progress based on status and results
+    progress_percentage = 0
+    current_step = "Initializing"
+    
+    if job.status == "completed":
+        progress_percentage = 100
+        current_step = "Completed"
+    elif job.status == "processing":
+        # More accurate progress calculation
+        if job.limit > 0:
+            # Base progress on results found, but cap at 95% until truly complete
+            base_progress = min(95, int((results_count / job.limit) * 100))
+            # Add some progress for being in processing state
+            progress_percentage = max(10, base_progress)
+        else:
+            progress_percentage = 50
+        current_step = f"Scraping... ({results_count} results found)"
+    elif job.status == "pending":
+        progress_percentage = 5
+        current_step = "Queued"
+    elif "failed" in job.status.lower():
+        progress_percentage = 0
+        current_step = "Failed"
+    
+    return {
+        "job_id": job.id,
+        "status": job.status,
+        "progress_percentage": progress_percentage,
+        "current_step": current_step,
+        "results_count": results_count,
+        "target_results": job.limit,
+        "query": job.query,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "updated_at": job.updated_at.isoformat() if hasattr(job, 'updated_at') and job.updated_at else None,
+        "estimated_time_remaining": calculate_estimated_time(job, results_count)
+    }
+
+def calculate_estimated_time(job: SearchJob, current_results: int) -> str:
+    """Calculate estimated time remaining based on current progress and elapsed time"""
+    if job.status == "completed":
+        return "Completed"
+    
+    if current_results == 0:
+        return "Calculating..."
+    
+    # Calculate elapsed time since job started
+    elapsed_time = (datetime.utcnow() - job.created_at).total_seconds()
+    
+    if elapsed_time < 30:  # Still in initial phase
+        return "Starting up..."
+    
+    # Calculate rate based on actual performance
+    if current_results > 0 and elapsed_time > 0:
+        results_per_second = current_results / elapsed_time
+        remaining_results = max(0, job.limit - current_results)
+        
+        if results_per_second > 0:
+            estimated_seconds = remaining_results / results_per_second
+        else:
+            # Fallback estimate: 3-5 seconds per result
+            estimated_seconds = remaining_results * 4
+    else:
+        # Fallback estimate
+        estimated_seconds = max(0, job.limit - current_results) * 4
+    
+    # Add some buffer time for processing
+    estimated_seconds += 30
+    
+    # Format time remaining
+    if estimated_seconds < 60:
+        return f"{int(estimated_seconds)} seconds"
+    elif estimated_seconds < 3600:
+        minutes = int(estimated_seconds / 60)
+        return f"{minutes} minute{'s' if minutes > 1 else ''}"
+    else:
+        hours = int(estimated_seconds / 3600)
+        return f"{hours} hour{'s' if hours > 1 else ''}"

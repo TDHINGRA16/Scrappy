@@ -1,7 +1,25 @@
+import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://user:password@db:5432/scraper_db"
+    # Database configuration that works for both Docker and local development
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/scraper_db"
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Auto-detect if running in Docker and adjust database URL
+        if self._is_running_in_docker():
+            self.DATABASE_URL = "postgresql+asyncpg://postgres:password@db:5432/scraper_db"
+    
+    def _is_running_in_docker(self) -> bool:
+        """Check if the application is running in a Docker container"""
+        # Check for Docker environment indicators
+        return (
+            os.path.exists('/.dockerenv') or  # Docker creates this file
+            os.environ.get('DOCKER_CONTAINER') == 'true' or  # Custom env var
+            os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None  # Lambda environment
+        )
+    
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_WHATSAPP_NUMBER: str = "whatsapp:+14155238886"
