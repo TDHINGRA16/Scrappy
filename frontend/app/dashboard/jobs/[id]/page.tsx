@@ -276,18 +276,18 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
 
       <div className="flex justify-between items-center">
         <div>
-          <div style={{ height: '36px', width: '200px', marginBottom: '10px' }}>
+          <div style={{ width: '100%', marginBottom: '10px' }} className="min-w-0 overflow-x-auto">
             {isMounted ? (
               <TextPressure
                 text={`JOB #${jobStatus.job_id}`}
-                flex={true}
+                flex={false}
                 alpha={false}
                 stroke={false}
                 width={true}
                 weight={true}
                 italic={true}
                 textColor="#000000"
-                minFontSize={14}
+                minFontSize={12}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
