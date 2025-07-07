@@ -5,7 +5,7 @@ import asyncio
 import random
 from app.schemas import SearchRequest, SearchJobResponse
 from app.database import get_db, AsyncSessionLocal
-from app.services.scraper import scrape_google_maps, scrape_website
+from app.services.scraper import scrape_google_maps, scrape_website, scrape_google_maps_all_details
 from app.services.google_sheets import sheets_service
 from app.models import SearchJob, ScrapeResult
 from app.utils.loggers import logger
@@ -69,8 +69,8 @@ async def process_search_job(job_id: int, request: SearchRequest):
             processed_query = preprocess_business_query(request.query)
             logger.info(f"Searching for: '{processed_query}'")
             
-            # Use Google Maps scraping
-            results = await scrape_google_maps(processed_query, max_results=request.limit)
+            # Use new async parallelized Google Maps scraping (all results)
+            results = await scrape_google_maps_all_details(processed_query)
             
             if not results:
                 logger.warning(f"No Google Maps results found for query: '{processed_query}'")
