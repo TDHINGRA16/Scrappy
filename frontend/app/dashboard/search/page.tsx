@@ -66,6 +66,10 @@ export default function SearchPage() {
 
       // Show message and button instead of redirecting
       setJobId(data.job_id?.toString())
+      // After a short delay, redirect to job details page
+      setTimeout(() => {
+        router.push(`/dashboard/jobs/${data.job_id}`)
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create search job")
     } finally {
