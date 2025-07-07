@@ -400,7 +400,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
                               <span className="text-muted-foreground">Website:</span>{" "}
                               {result.website ? (
                                 <a
-                                  href={result.website}
+                                  href={result.website.startsWith('http://') || result.website.startsWith('https://') ? result.website : `https://${result.website}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-primary hover:underline"

@@ -217,109 +217,57 @@ def scrape_google_maps_sync(search_query: str, max_results: int = 20) -> List[Di
                 except:
                     logger.warning("Could not hover over first listing")
             
-            # Scroll to load more results
-            previously_counted = 0
+            # For any requested number of results (max_results), try to collect up to 3x that number
+            overfetch_limit = max_results * 3
+            unique_businesses = dict()  # key: (name.lower(), address.lower(), phone), value: listing
+            max_scroll_attempts = 100
             scroll_attempts = 0
-            no_new_results_count = 0
-            max_no_new_results = 15  # Increased to 15 to be more persistent
-            all_collected_listings = []  # Store all listings as we find them
-            
-            logger.info(f"Starting to scroll for {max_results} results...")
-            
-            while no_new_results_count < max_no_new_results:
-                # Scroll down to load more results
-                page.mouse.wheel(0, 10000)  # Increased scroll distance
-                page.wait_for_timeout(4000)  # Increased wait time for results to load
-                
-                # Try multiple selectors to count listings
-                current_count = 0
-                current_listings = []
-                working_selector = None
-                
+            last_unique_count = 0
+            no_new_unique_scrolls = 0
+            max_no_new_unique_scrolls = 5  # Allow several scrolls with no new uniques before stopping
+            while len(unique_businesses) < overfetch_limit and scroll_attempts < max_scroll_attempts:
+                page.mouse.wheel(0, 10000)
+                page.wait_for_timeout(2000)
+                scroll_attempts += 1
                 for selector in selectors_to_try:
                     try:
-                        current_listings = page.locator(selector).all()
-                        current_count = len(current_listings)
-                        if current_count > 0:
-                            working_selector = selector
-                            break
-                    except:
+                        selector_listings = page.locator(selector).all()
+                        for listing in selector_listings:
+                            try:
+                                name = listing.inner_text().strip()
+                                href = listing.get_attribute('href')
+                                address = ''
+                                phone = ''
+                                text = name.lower()
+                                if ',' in name:
+                                    address = name.split(',')[-1].strip().lower()
+                                key = (name.lower(), address, phone)
+                                if name and key not in unique_businesses:
+                                    unique_businesses[key] = listing
+                            except Exception:
+                                continue
+                    except Exception:
                         continue
-                
-                logger.info(f"Scroll attempt {scroll_attempts + 1}: Found {current_count} results (target: {max_results})")
-                
-                # Collect new listings from this scroll
-                if current_listings and working_selector:
-                    new_listings = []
-                    for listing in current_listings:
-                        try:
-                            # Get the parent element for clicking
-                            parent_listing = listing.locator("xpath=..")
-                            new_listings.append(parent_listing)
-                        except:
-                            continue
-                    
-                    # Add new listings to our collection
-                    all_collected_listings.extend(new_listings)
-                    logger.info(f"Added {len(new_listings)} new listings. Total collected: {len(all_collected_listings)}")
-                    
-                    # Log unique count (approximate)
-                    unique_count = len(set([listing.locator("xpath=..").inner_text() for listing in current_listings if listing.locator("xpath=..").inner_text()]))
-                    logger.info(f"Approximate unique results in this scroll: {unique_count}")
-                
-                if len(all_collected_listings) >= max_results:
-                    logger.info(f"Reached target of {max_results} results!")
-                    break
-                elif current_count == previously_counted:
-                    no_new_results_count += 1
-                    logger.info(f"No new results found. Attempt {no_new_results_count}/{max_no_new_results}")
-                    
-                    # Try additional scrolling techniques if no new results
-                    if no_new_results_count >= 5:
-                        logger.info("Trying additional scrolling techniques...")
-                        # Try scrolling to bottom of page
-                        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                        page.wait_for_timeout(2000)
-                        
-                        # Try clicking "Show more" or similar buttons
-                        try:
-                            show_more_selectors = [
-                                '//span[contains(text(), "Show more")]',
-                                '//span[contains(text(), "More")]',
-                                '//button[contains(text(), "Show")]',
-                                '//div[contains(text(), "Show more")]'
-                            ]
-                            for selector in show_more_selectors:
-                                if page.locator(selector).count() > 0:
-                                    page.locator(selector).first.click()
-                                    page.wait_for_timeout(3000)
-                                    logger.info("Clicked 'Show more' button")
-                                    break
-                        except Exception as e:
-                            logger.debug(f"Could not click show more button: {str(e)}")
+                # Log the number of unique results after each scroll
+                logger.info(f"[SCRAPER] Unique results after scroll {scroll_attempts}: {len(unique_businesses)}")
+                # If no new unique results were added in this scroll, increment counter
+                if len(unique_businesses) == last_unique_count:
+                    no_new_unique_scrolls += 1
                 else:
-                    no_new_results_count = 0  # Reset counter when new results are found
-                    previously_counted = current_count
-                    logger.info(f"Found new results! Total: {current_count}")
-                
-                scroll_attempts += 1
-                
-                # Safety check to prevent infinite loops
-                if scroll_attempts > 100:
-                    logger.warning("Reached maximum scroll attempts, stopping")
+                    no_new_unique_scrolls = 0
+                last_unique_count = len(unique_businesses)
+                # Only stop if we've had several scrolls with no new uniques
+                if no_new_unique_scrolls >= max_no_new_unique_scrolls:
                     break
-            
-            # Use all collected listings, but limit to target number to avoid processing too many
-            listings = all_collected_listings[:max_results * 2]  # Process up to 2x target to account for duplicates
-            
-            # If we couldn't find any listings, return empty results
+            # Use all unique listings found during scrolling
+            listings = list(unique_businesses.values())
             if not listings:
                 logger.warning(f"No listings found for query: {search_query}")
                 return []
             
-            logger.info(f"Processing {len(listings)} total collected listings (limited to {max_results * 2} to avoid processing too many duplicates)")
+            logger.info(f"Processing {len(listings)} total collected listings (processing all to maximize unique results)")
             
-            # Process each listing
+            # Process each listing (extract details for ALL)
             processed_count = 0
             for i, listing in enumerate(listings):
                 try:
@@ -581,8 +529,9 @@ def scrape_google_maps_sync(search_query: str, max_results: int = 20) -> List[Di
                         "introduction": intro_list[i]
                     })
             
+            # After deduplication, return only the first N unique results
             logger.info(f"Scraping completed! Found {len(final_results)} unique results out of {len(names_list)} processed listings")
-            return final_results
+            return final_results[:max_results]
             
     except Exception as e:
         error_message = str(e)

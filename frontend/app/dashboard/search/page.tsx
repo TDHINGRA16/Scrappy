@@ -29,6 +29,7 @@ export default function SearchPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [jobId, setJobId] = useState<string | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -63,8 +64,8 @@ export default function SearchPage() {
         throw new Error(data.detail || "Failed to create search job")
       }
 
-      // Redirect to job status page
-      router.push(`/dashboard/jobs/${data.job_id}`)
+      // Show message and button instead of redirecting
+      setJobId(data.job_id?.toString())
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create search job")
     } finally {
@@ -73,6 +74,14 @@ export default function SearchPage() {
   }
   return (
     <div className="space-y-6 bg-white min-h-screen p-6">
+      {jobId && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-300 rounded">
+          <div className="font-semibold mb-2">Job added to queue!</div>
+          <Button onClick={() => router.push(`/dashboard/jobs/${jobId}`)}>
+            View Job Details
+          </Button>
+        </div>
+      )}
       <div>
         <div style={{ height: '50px', width: '300px', marginBottom: '10px' }}>
           {isMounted ? (
