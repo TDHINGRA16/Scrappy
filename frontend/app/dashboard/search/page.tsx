@@ -42,8 +42,7 @@ export default function SearchPage() {
 
     try {
       const token = localStorage.getItem("token")
-      // Fire and forget: don't await the fetch
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -57,10 +56,16 @@ export default function SearchPage() {
           prewritten_message: prewrittenMessage,
           source, // Include source in the request
         }),
-      }).catch(() => { /* Optionally handle errors in the background */ })
+      })
 
-      // Immediately redirect to jobs dashboard
-      router.push("/dashboard/jobs")
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to create search job")
+      }
+
+      // Redirect to job details page
+      router.push(`/dashboard/jobs/${data.job_id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create search job")
     } finally {
