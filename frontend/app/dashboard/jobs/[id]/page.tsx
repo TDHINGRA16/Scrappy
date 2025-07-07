@@ -276,7 +276,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
 
       <div className="flex justify-between items-center">
         <div>
-          <div style={{ height: '50px', width: '300px', marginBottom: '10px' }}>
+          <div style={{ height: '36px', width: '200px', marginBottom: '10px' }}>
             {isMounted ? (
               <TextPressure
                 text={`JOB #${jobStatus.job_id}`}
@@ -287,7 +287,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
                 weight={true}
                 italic={true}
                 textColor="#000000"
-                minFontSize={18}
+                minFontSize={14}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
