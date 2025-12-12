@@ -1,4 +1,5 @@
 @echo off
+
 echo ==========================================
 echo        STARTING SCRAPPY APPLICATION
 echo ==========================================
@@ -9,6 +10,15 @@ node --version >nul 2>&1
 if errorlevel 1 (
     echo ERROR: Node.js is not installed or not in PATH
     echo Please install Node.js from https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+REM Check if pnpm is installed
+pnpm --version >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: pnpm is not installed or not in PATH
+    echo Please install pnpm globally: npm install -g pnpm
     pause
     exit /b 1
 )
@@ -25,8 +35,8 @@ if errorlevel 1 (
 echo [1/4] Installing frontend dependencies...
 cd frontend
 if not exist node_modules (
-    echo Installing npm packages...
-    npm install
+    echo Installing pnpm packages...
+    pnpm install
     if errorlevel 1 (
         echo ERROR: Failed to install frontend dependencies
         pause
@@ -39,6 +49,12 @@ cd ..\backend
 if not exist venv (
     echo Creating Python virtual environment...
     python -m venv venv
+)
+
+if not exist venv\Scripts\activate.bat (
+    echo ERROR: Could not find virtual environment activation script.
+    pause
+    exit /b 1
 )
 
 echo Activating virtual environment and installing packages...
@@ -58,7 +74,7 @@ echo Waiting for backend to start...
 timeout /t 5 /nobreak >nul
 
 echo [4/4] Starting frontend server...
-start "SCRAPPY Frontend" cmd /k "cd frontend && npm run dev"
+start "SCRAPPY Frontend" cmd /k "cd frontend && pnpm dev"
 
 echo.
 echo ==========================================
