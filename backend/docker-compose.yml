@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  scrappy:
+    build: .
+    container_name: scrappy-v2
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DEBUG=False
+      - HEADLESS=True
+      - MAX_CONCURRENT_CARDS=4
+      - MAX_SCROLLS=50
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./temp:/app/temp
+      # Mount credentials file if using Google Sheets
+      # - ./credentials.json:/app/credentials.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Optional: Add Redis for caching/rate limiting in the future
+#   redis:
+#     image: redis:7-alpine
+#     container_name: scrappy-redis
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
+#     restart: unless-stopped
+
+# volumes:
+#   redis_data:

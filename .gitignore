@@ -1,0 +1,38 @@
+# Environment files
+.env
+backend/.env
+
+# Google / OAuth credentials
+backend/client_secret.json
+backend/client_secret.json.json
+**/credentials.json
+**/credentials-*.json
+**/*credentials*.json
+
+# Keys
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Node
+node_modules/
+
+# Frontend build
+frontend/.next/
+frontend/.vercel/
+
+# OS
+.DS_Store
+
+# Local envs
+.env.local
+.env.*.local

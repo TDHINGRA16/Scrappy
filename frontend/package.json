@@ -1,0 +1,43 @@
+{
+  "name": "scrappy-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "better-auth": "^1.4.17",
+    "clsx": "^2.0.0",
+    "framer-motion": "^12.28.1",
+    "gsap": "^3.12.2",
+    "kysely": "^0.28.10",
+    "lucide-react": "^0.562.0",
+    "next": "15.0.0",
+    "pg": "^8.17.2",
+    "react": "19.0.0",
+    "react-confetti": "^6.4.0",
+    "react-dom": "19.0.0",
+    "react-hot-toast": "^2.6.0",
+    "tailwind-merge": "^2.1.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "15.0.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.0"
+  }
+}
