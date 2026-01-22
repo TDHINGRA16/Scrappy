@@ -5,14 +5,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const API_BASE_URL = process.env.API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:8000";
 
 // Better Auth session cookie name
-const SESSION_COOKIE_NAME = "better-auth.session_token";
+// In production with HTTPS, cookies have __Secure- prefix
+const SESSION_COOKIE_NAME = "__Secure-better-auth.session_token";
+const SESSION_COOKIE_NAME_DEV = "better-auth.session_token";
 
 async function proxyRequest(request: NextRequest, path: string[]) {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  // Try secure cookie first (production HTTPS), then fallback to dev cookie
+  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value || cookieStore.get(SESSION_COOKIE_NAME_DEV)?.value;
 
   if (!sessionCookie) {
     return NextResponse.json(
@@ -35,7 +38,7 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   // Build the target URL
   const targetPath = "/" + path.join("/");
   const url = new URL(targetPath, API_BASE_URL);
-  
+
   // Copy search params
   request.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.append(key, value);
@@ -67,7 +70,7 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     // Try to parse as JSON, fallback to text
     const contentType = response.headers.get("content-type") || "";
     let data;
-    
+
     if (contentType.includes("application/json")) {
       try {
         data = await response.json();
