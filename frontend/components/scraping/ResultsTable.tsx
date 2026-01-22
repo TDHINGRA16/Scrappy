@@ -104,8 +104,10 @@ export function ResultsTable({
     const aValue = a[sortField];
     const bValue = b[sortField];
 
-    if (aValue === null) return 1;
-    if (bValue === null) return -1;
+    // Handle null/undefined values - push them to the end
+    if (aValue == null && bValue == null) return 0;
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
 
     const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     return sortDirection === "asc" ? comparison : -comparison;

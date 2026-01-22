@@ -16,9 +16,7 @@ const pool = new Pool({
 export const auth = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET || "default-secret-change-me",
-  advanced: {
-    generateId: () => crypto.randomUUID(),
-  },
+  // advanced options removed - generateId not in type definitions
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
