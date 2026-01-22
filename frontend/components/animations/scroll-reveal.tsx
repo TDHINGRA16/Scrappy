@@ -91,22 +91,26 @@ export function ScrollReveal({
 }
 
 interface CounterAnimationProps {
-  value: number;
+  value?: number;
+  end?: number;
   suffix?: string;
   prefix?: string;
   className?: string;
   duration?: number;
+  delay?: number;
 }
 
 export function CounterAnimation({
-  value = 0,
+  value,
+  end,
   suffix = "",
   prefix = "",
   className,
   duration = 2,
+  delay = 0,
 }: CounterAnimationProps) {
   const counterRef = useRef<HTMLSpanElement>(null);
-  const displayValue = value ?? 0;
+  const displayValue = end ?? value ?? 0;
 
   useEffect(() => {
     const element = counterRef.current;
@@ -116,6 +120,7 @@ export function CounterAnimation({
       gsap.from(element, {
         textContent: 0,
         duration,
+        delay,
         snap: { textContent: 1 },
         scrollTrigger: {
           trigger: element,
@@ -129,7 +134,7 @@ export function CounterAnimation({
     });
 
     return () => ctx.revert();
-  }, [displayValue, duration]);
+  }, [displayValue, duration, delay]);
 
   return (
     <span className={className}>
