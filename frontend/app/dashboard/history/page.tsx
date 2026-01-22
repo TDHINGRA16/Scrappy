@@ -5,6 +5,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   History, Clock, Search, Calendar, Download, Filter, 
@@ -45,6 +46,7 @@ interface UserStats {
 export default function HistoryPage() {
   const pageRef = usePageTransition();
   const { token } = useAuth();
+  const router = useRouter();
   
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -212,8 +214,10 @@ export default function HistoryPage() {
             icon={Clock}
             title="No history yet"
             description="Your scraping history will appear here after you run your first scraping job. Start scraping to see your results!"
-            actionLabel="Start Scraping"
-            actionHref="/dashboard"
+            action={{
+              label: "Start Scraping",
+              onClick: () => router.push("/dashboard"),
+            }}
           />
         ) : (
           <div className="space-y-4">
