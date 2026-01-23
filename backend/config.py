@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     
     # Browser Settings
     HEADLESS: bool = True
-    BROWSER_TIMEOUT: int = 30000  # 30 seconds
+    BROWSER_TIMEOUT: int = 60000  # 60 seconds
     PAGE_LOAD_TIMEOUT: int = 60000  # 60 seconds
     
     # User Agent Rotation

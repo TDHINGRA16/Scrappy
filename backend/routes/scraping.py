@@ -186,6 +186,7 @@ async def _run_scrape_with_progress(
         user_email: User email for logging
         seen_places: Set of Place IDs to skip (deduplication)
     """
+    start_time = time.time()
     try:
         update_scrape_progress(
             scrape_id,
@@ -208,6 +209,8 @@ async def _run_scrape_with_progress(
             )
             
             stats = scraper.get_stats()
+        
+        time_taken = round(time.time() - start_time, 2)
         
         # Convert to BusinessResult models
         business_results = [
@@ -245,7 +248,7 @@ async def _run_scrape_with_progress(
                     total_found=stats.get('cards_found', 0),
                     new_results=len(results),
                     skipped_duplicates=stats.get('skipped_duplicates', 0),
-                    time_taken=0  # Will be calculated from progress tracker
+                    time_taken=time_taken
                 )
                 
                 logger.info(f"📝 Recorded {len(place_ids)} places for user {user_id[:8]}...")
@@ -259,7 +262,7 @@ async def _run_scrape_with_progress(
         # Mark as complete
         complete_scrape_progress(scrape_id, business_results, success=True)
         
-        logger.info(f"✅ Async scrape {scrape_id} complete: {len(business_results)} results")
+        logger.info(f"✅ Async scrape {scrape_id} complete: {len(business_results)} results in {time_taken}s")
         
     except Exception as e:
         logger.error(f"❌ Async scrape {scrape_id} failed: {e}")
@@ -528,8 +531,21 @@ async def save_to_sheets(
         # Convert Pydantic models to dicts
         results_dicts = [r.model_dump() for r in request.results]
         
+        # Use provided ID or fallback to settings
+        target_spreadsheet_id = request.spreadsheet_id or settings.SPREADSHEET_ID
+        
+        if not target_spreadsheet_id:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "status": "error",
+                    "message": "Spreadsheet ID not provided",
+                    "detail": "Please provide a spreadsheet_id in the request or configure SPREADSHEET_ID in backend settings."
+                }
+            )
+
         result = await sheets_service.append_results(
-            spreadsheet_id=request.spreadsheet_id,
+            spreadsheet_id=target_spreadsheet_id,
             sheet_name=request.sheet_name,
             results=results_dicts
         )
@@ -542,6 +558,17 @@ async def save_to_sheets(
         
         return GoogleSheetsResponse(**result)
         
+    except ValueError as e:
+        logger.error(f"Value error: {e}")
+        # This catches our custom credential validation errors
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "status": "error",
+                "message": str(e).split('\n')[0],  # First line of the error
+                "detail": str(e)
+            }
+        )
     except FileNotFoundError as e:
         logger.error(f"Credentials file not found: {e}")
         raise HTTPException(

@@ -4,7 +4,7 @@ User Model for Scrappy v2.0
 SQLAlchemy model for storing user authentication data.
 """
 
-from sqlalchemy import Column, String, DateTime, Boolean, Text
+from sqlalchemy import Column, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -21,54 +21,39 @@ class User(Base):
     """
     User model - stores authentication info
     
-    Compatible with BetterAuth patterns:
-    - UUID primary key
-    - Email as unique identifier
-    - bcrypt password hash
-    - Timestamps for audit
+    Compatible with BetterAuth schema (camelCase columns):
+    - id: String (matches BetterAuth generated IDs)
+    - email: String
+    - emailVerified: Boolean
+    - createdAt, updatedAt: DateTime
     """
     __tablename__ = "user"
     
-    # Primary key
+    # Primary key - Changed to String for BetterAuth compatibility
     id = Column(
-        UUID(as_uuid=True), 
+        String, 
         primary_key=True, 
-        default=uuid.uuid4,
         index=True
     )
     
     # Authentication fields
-    email = Column(
-        String(255), 
-        unique=True, 
-        nullable=False, 
-        index=True
-    )
-    password_hash = Column(
-        String(255), 
-        nullable=False
-    )
-    # BetterAuth compatibility: add password column (same as password_hash)
-    password = Column(
-        String(255),
-        nullable=True  # Nullable for backward compatibility
-    )
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password = Column(String(255), nullable=True) # For email/password auth
     
     # Profile fields
     name = Column(String(255), nullable=True)
-    image = Column(Text, nullable=True)  # Profile image URL
+    image = Column(Text, nullable=True)
     
-    # Status fields
-    is_active = Column(Boolean, default=True)
-    email_verified = Column(Boolean, default=False)
-    email_verified_at = Column(DateTime, nullable=True)
+    # BetterAuth uses camelCase columns by default
+    emailVerified = Column(Boolean, default=False)
     
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_login_at = Column(DateTime, nullable=True)
+    # Timestamps (camelCase for BetterAuth)
+    createdAt = Column(DateTime, default=datetime.utcnow)
+    updatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
+    accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
     integrations = relationship(
         "UserIntegration", 
         back_populates="user", 
@@ -79,19 +64,76 @@ class User(Base):
         return f"<User {self.email}>"
     
     def to_dict(self) -> dict:
-        """Convert user to dictionary (excluding sensitive data)"""
         return {
-            "id": str(self.id),
+            "id": self.id,
             "email": self.email,
             "name": self.name,
             "image": self.image,
-            "is_active": self.is_active,
-            "email_verified": self.email_verified,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "emailVerified": self.emailVerified,
+            "createdAt": self.createdAt.isoformat() if self.createdAt else None,
+            "updatedAt": self.updatedAt.isoformat() if self.updatedAt else None,
         }
 
 
-# NOTE: The old "Session" model for "sessions" table was removed.
-# Better Auth uses the "session" table (singular) defined in models/better_auth.py
-# The unused "sessions" table should be dropped from the database manually.
+class Session(Base):
+    """BetterAuth Session Table"""
+    __tablename__ = "session"
+    
+    id = Column(String, primary_key=True)
+    expiresAt = Column(DateTime, nullable=False)
+    token = Column(String, nullable=False, unique=True, index=True)
+    ipAddress = Column(String, nullable=True)
+    userAgent = Column(String, nullable=True)
+    
+    # Foreign Key - Changed to String
+    userId = Column(
+        String, 
+        ForeignKey('user.id', ondelete='CASCADE'), 
+        nullable=False,
+        index=True
+    )
+    
+    createdAt = Column(DateTime, default=datetime.utcnow)
+    updatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = relationship("User", back_populates="sessions")
+
+
+class Account(Base):
+    """BetterAuth Account Table (for OAuth)"""
+    __tablename__ = "account"
+    
+    id = Column(String, primary_key=True)
+    accountId = Column(String, nullable=False)
+    providerId = Column(String, nullable=False)
+    
+    # Foreign Key - Changed to String
+    userId = Column(
+        String, 
+        ForeignKey('user.id', ondelete='CASCADE'), 
+        nullable=False,
+        index=True
+    )
+    
+    accessToken = Column(String, nullable=True)
+    refreshToken = Column(String, nullable=True)
+    expiresAt = Column(DateTime, nullable=True)
+    password = Column(String, nullable=True)
+    
+    createdAt = Column(DateTime, default=datetime.utcnow)
+    updatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = relationship("User", back_populates="accounts")
+
+
+class Verification(Base):
+    """BetterAuth Verification Table (for email verification)"""
+    __tablename__ = "verification"
+    
+    id = Column(String, primary_key=True)
+    identifier = Column(String, nullable=False)
+    value = Column(String, nullable=False)
+    expiresAt = Column(DateTime, nullable=False)
+    createdAt = Column(DateTime, default=datetime.utcnow)
+    updatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+

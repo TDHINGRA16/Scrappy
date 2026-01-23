@@ -23,7 +23,7 @@ interface UseGoogleSheetsReturn {
   fetchStatus: () => Promise<void>;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  saveToSheets: (leads: Lead[], sheetName?: string, spreadsheetId?: string) => Promise<SaveToGoogleSheetsResponse | null>;
+  saveToSheets: (leads: Lead[], query?: string, sheetName?: string, spreadsheetId?: string) => Promise<SaveToGoogleSheetsResponse | null>;
 }
 
 export function useGoogleSheets(): UseGoogleSheetsReturn {
@@ -45,7 +45,7 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
       setIsLoading(true);
       setError(null);
       const response = await apiClient.getGoogleIntegrationStatus();
-      
+
       if (response.data) {
         setStatus(response.data);
       } else if (response.error) {
@@ -72,9 +72,9 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
     try {
       setIsConnecting(true);
       setError(null);
-      
+
       const response = await apiClient.getGoogleAuthURL();
-      
+
       if (response.data?.authorization_url) {
         // Store state for CSRF verification on callback
         if (response.data.state) {
@@ -100,9 +100,9 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await apiClient.disconnectGoogleSheets();
-      
+
       if (response.data?.success) {
         setStatus({ connected: false });
       } else if (response.error) {
@@ -119,6 +119,7 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
   // Save leads to Google Sheets
   const saveToSheets = useCallback(async (
     leads: Lead[],
+    query?: string,
     sheetName: string = "Scrappy Results",
     spreadsheetId?: string
   ): Promise<SaveToGoogleSheetsResponse | null> => {
@@ -154,6 +155,7 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
       const response = await apiClient.saveToGoogleSheets({
         spreadsheet_id: spreadsheetId,
         sheet_name: sheetName,
+        query,
         data,
       });
 
@@ -163,7 +165,7 @@ export function useGoogleSheets(): UseGoogleSheetsReturn {
         setError(response.error);
         return null;
       }
-      
+
       return null;
     } catch (err) {
       console.error("Failed to save to Google Sheets:", err);

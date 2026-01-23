@@ -14,6 +14,8 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
+from config import settings
+
 class EncryptionService:
     """
     Service to encrypt and decrypt sensitive data (OAuth tokens) using Fernet symmetric encryption.
@@ -35,7 +37,7 @@ class EncryptionService:
     """
 
     def __init__(self):
-        encryption_key = os.getenv('ENCRYPTION_KEY')
+        encryption_key = settings.ENCRYPTION_KEY
         if not encryption_key:
             # Generate a key for development (should be set in production)
             logger.warning("⚠️ ENCRYPTION_KEY not set. Generating temporary key for development.")

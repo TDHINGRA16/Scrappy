@@ -7,8 +7,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  History, Clock, Search, Calendar, Download, Filter, 
+import {
+  History, Clock, Search, Calendar, Download, Filter,
   ExternalLink, FileSpreadsheet, AlertCircle, CheckCircle,
   ChevronLeft, ChevronRight, TrendingUp, XCircle
 } from "lucide-react";
@@ -47,7 +47,7 @@ export default function HistoryPage() {
   const pageRef = usePageTransition();
   const { token } = useAuth();
   const router = useRouter();
-  
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +55,7 @@ export default function HistoryPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
-  
+
   const LIMIT = 10;
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function HistoryPage() {
 
   const fetchHistory = async () => {
     if (!token) return;
-    
+
     setLoading(true);
     try {
       const response = await apiClient.getHistory(token, LIMIT, page * LIMIT);
@@ -85,7 +85,7 @@ export default function HistoryPage() {
 
   const fetchStats = async () => {
     if (!token) return;
-    
+
     try {
       const response = await apiClient.getUserStats(token);
       if (response.data) {
@@ -97,7 +97,14 @@ export default function HistoryPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    if (!dateStr) return "N/A";
+
+    // Backend returns UTC ISO string (e.g. 2026-01-23T13:22:00.123456)
+    // If it doesn't end in Z, browsers treat it as Local Time.
+    // We force it to be treated as UTC by appending Z.
+    const safeDateStr = dateStr.endsWith("Z") ? dateStr : `${dateStr}Z`;
+    const date = new Date(safeDateStr);
+
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -114,14 +121,14 @@ export default function HistoryPage() {
     return `${mins}m ${secs}s`;
   };
 
-  const filteredHistory = history.filter(item => 
+  const filteredHistory = history.filter(item =>
     item.query.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div ref={pageRef}>
       {/* Page Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"

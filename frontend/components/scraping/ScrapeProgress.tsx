@@ -44,14 +44,14 @@ interface ScrapeProgressProps {
 }
 
 // Stat Card Component
-const StatCard = ({ 
-  title, 
-  value, 
-  icon, 
-  animate = true 
-}: { 
-  title: string; 
-  value: string | number; 
+const StatCard = ({
+  title,
+  value,
+  icon,
+  animate = true
+}: {
+  title: string;
+  value: string | number;
   icon: string;
   animate?: boolean;
 }) => (
@@ -64,7 +64,7 @@ const StatCard = ({
       <span className="text-2xl">{icon}</span>
       <div>
         <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{title}</p>
-        <motion.p 
+        <motion.p
           key={value}
           initial={{ scale: 1.2 }}
           animate={{ scale: 1 }}
@@ -113,25 +113,26 @@ const BusinessCardPreview = ({ data }: { data: SampleResult }) => (
 );
 
 // Main Progress Component
-export default function ScrapeProgress({ 
-  scrapeId, 
-  query, 
-  onComplete, 
-  onError 
+export default function ScrapeProgress({
+  scrapeId,
+  query,
+  onComplete,
+  onError
 }: ScrapeProgressProps) {
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [isPolling, setIsPolling] = useState(true);
-  
+
   // Use refs for callbacks to avoid useEffect dependency issues
   const onCompleteRef = useRef(onComplete);
   const onErrorRef = useRef(onError);
-  
+  const hasCompletedRef = useRef(false);
+
   // Keep refs updated
   useEffect(() => {
     onCompleteRef.current = onComplete;
     onErrorRef.current = onError;
   }, [onComplete, onError]);
-  
+
   // Backend URL - use environment variable or default to localhost
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
@@ -139,16 +140,19 @@ export default function ScrapeProgress({
   useEffect(() => {
     if (!scrapeId || !isPolling) return;
 
+    // Reset completion state for new scrape
+    hasCompletedRef.current = false;
+
     console.log('[ScrapeProgress] Starting polling for scrapeId:', scrapeId);
 
     const pollProgress = async () => {
       try {
         const response = await fetch(`${backendUrl}/api/scrape/${scrapeId}/progress`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch progress');
         }
-        
+
         const data: ProgressData = await response.json();
         setProgress(data);
 
@@ -156,10 +160,15 @@ export default function ScrapeProgress({
         if (data.status === 'completed') {
           console.log('[ScrapeProgress] Scrape completed, fetching results...');
           setIsPolling(false);
+
+          // Prevent multiple calls
+          if (hasCompletedRef.current) return;
+          hasCompletedRef.current = true;
+
           // Fetch final results
           const resultsResponse = await fetch(`${backendUrl}/api/scrape/${scrapeId}/results`);
           console.log('[ScrapeProgress] Results response status:', resultsResponse.status);
-          
+
           if (resultsResponse.ok) {
             const resultsData = await resultsResponse.json();
             console.log('[ScrapeProgress] Results received:', resultsData.results?.length || 0, 'items');
@@ -263,7 +272,7 @@ export default function ScrapeProgress({
             {/* Glow effect */}
             <motion.div
               className="absolute inset-0"
-              animate={{ 
+              animate={{
                 boxShadow: [
                   '0 0 10px rgba(34, 197, 94, 0.3)',
                   '0 0 20px rgba(34, 197, 94, 0.6)',
@@ -274,7 +283,7 @@ export default function ScrapeProgress({
             />
           </motion.div>
         </div>
-        
+
         {/* Phase indicators */}
         <div className="flex justify-between mt-2 text-xs text-gray-400">
           <span className={status === 'starting' ? 'text-green-500 font-medium' : ''}>Starting</span>
@@ -285,45 +294,40 @@ export default function ScrapeProgress({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard 
-          title="Found" 
-          value={stats.cards_found} 
-          icon="📍" 
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+        <StatCard
+          title="Found"
+          value={stats.cards_found}
+          icon="📍"
         />
-        <StatCard 
-          title="Extracted" 
-          value={stats.cards_extracted} 
-          icon="✅" 
+        <StatCard
+          title="Extracted"
+          value={stats.cards_extracted}
+          icon="✅"
         />
-        <StatCard 
-          title="Time" 
-          value={stats.time_elapsed} 
-          icon="⏱️" 
-        />
-        <StatCard 
-          title="ETA" 
-          value={stats.eta} 
-          icon="🔮" 
+        <StatCard
+          title="Time"
+          value={stats.time_elapsed}
+          icon="⏱️"
         />
       </div>
 
       {/* Additional Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatCard 
-          title="Unique Results" 
-          value={stats.unique_results} 
-          icon="⭐" 
+        <StatCard
+          title="Unique Results"
+          value={stats.unique_results}
+          icon="⭐"
         />
-        <StatCard 
-          title="Scrolls" 
-          value={`${stats.scrolls_done}/${stats.max_scrolls}`} 
-          icon="📜" 
+        <StatCard
+          title="Scrolls"
+          value={`${stats.scrolls_done}/${stats.max_scrolls}`}
+          icon="📜"
         />
-        <StatCard 
-          title="Errors" 
-          value={stats.extraction_errors} 
-          icon="⚠️" 
+        <StatCard
+          title="Errors"
+          value={stats.extraction_errors}
+          icon="⚠️"
         />
       </div>
 

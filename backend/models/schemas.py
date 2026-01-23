@@ -119,8 +119,9 @@ class GoogleSheetsRequest(BaseModel):
     """Request to save results to Google Sheets"""
     
     results: List[BusinessResult] = Field(..., description="Results to save")
-    spreadsheet_id: str = Field(..., description="Google Spreadsheet ID")
+    spreadsheet_id: Optional[str] = Field(None, description="Google Spreadsheet ID")
     sheet_name: str = Field("Scrappy Results", description="Sheet name to save to")
+    query: Optional[str] = Field(None, description="Search query for naming the spreadsheet")
     
     class Config:
         json_schema_extra = {

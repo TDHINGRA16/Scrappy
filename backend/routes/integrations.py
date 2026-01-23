@@ -69,6 +69,7 @@ class SaveToSheetsRequest(BaseModel):
     """Request to save data to Google Sheets"""
     spreadsheet_id: Optional[str] = None  # If None, create new spreadsheet
     sheet_name: str = "Scrappy Results"
+    query: Optional[str] = None  # Search query for naming the spreadsheet
     data: List[List[Any]]  # 2D array of data rows
 
 
@@ -284,10 +285,18 @@ async def save_to_google_sheets(
         
         # Create new spreadsheet if not provided
         if not spreadsheet_id:
-            timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+            timestamp = datetime.utcnow().strftime('%b %d, %Y')
+            # Use query for title if provided, otherwise use generic name
+            if request.query:
+                # Truncate long queries and sanitize for sheet title
+                query_title = request.query[:50].strip()
+                title = f"{query_title} - {timestamp}"
+            else:
+                title = f"Scrappy Leads - {timestamp}"
+            
             sheet_info = google_service.create_spreadsheet(
                 access_token,
-                title=f"Scrappy Results - {timestamp}",
+                title=title,
                 sheet_name=request.sheet_name  # Create with the correct sheet name
             )
             spreadsheet_id = sheet_info['spreadsheetId']

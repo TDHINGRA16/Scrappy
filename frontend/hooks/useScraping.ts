@@ -108,7 +108,7 @@ export function useScraping(): UseScrapingReturn {
   // Start async scraping with progress tracking (uses proxy for auth)
   const startScrapingAsync = useCallback(async (params: ScrapeRequest): Promise<AsyncScrapeResponse | null> => {
     console.log("[useScraping] startScrapingAsync called with:", params);
-    
+
     if (!isAuthenticated) {
       const errorMsg = "Authentication required. Please sign in.";
       setError(errorMsg);
@@ -143,7 +143,7 @@ export function useScraping(): UseScrapingReturn {
 
       const data: AsyncScrapeResponse = await response.json();
       console.log("[useScraping] Async scrape started:", data);
-      
+
       setScrapeId(data.scrape_id);
       return data;
     } catch (err) {
@@ -158,7 +158,7 @@ export function useScraping(): UseScrapingReturn {
   const startScraping = useCallback(async (params: ScrapeRequest): Promise<ScrapeResponse | null> => {
     console.log("[useScraping] startScraping called with:", params);
     console.log("[useScraping] isAuthenticated:", isAuthenticated);
-    
+
     if (!isAuthenticated) {
       const errorMsg = "Authentication required. Please sign in.";
       console.error("[useScraping] User not authenticated");
@@ -242,7 +242,7 @@ export function useScraping(): UseScrapingReturn {
 
     try {
       const response = await apiClient.saveToSheets({
-        leads,
+        results: leads,
         spreadsheet_id: spreadsheetId,
       });
 

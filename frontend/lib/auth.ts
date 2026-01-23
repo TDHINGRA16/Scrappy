@@ -10,7 +10,10 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
+  ssl: {
+    rejectUnauthorized: false, // Required for Supabase in many environments to avoid self-signed cert errors
+  },
 });
 
 export const auth = betterAuth({

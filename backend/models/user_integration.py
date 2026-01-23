@@ -43,7 +43,7 @@ class UserIntegration(Base):
     
     # Foreign key to user table (Better Auth uses 'user' not 'users')
     user_id = Column(
-        String,  # Better Auth uses string UUIDs
+        String,  # Matches User.id type (String)
         ForeignKey('user.id', ondelete='CASCADE'), 
         nullable=False,
         index=True

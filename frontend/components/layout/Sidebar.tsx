@@ -8,12 +8,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, 
-  History, 
-  FileSpreadsheet, 
-  MessageSquare, 
-  Settings, 
+import {
+  Search,
+  History,
+  FileSpreadsheet,
+  MessageSquare,
+  Settings,
   ChevronLeft,
   Zap,
   Sparkles
@@ -42,12 +42,13 @@ const navItems: NavItem[] = [
     name: "Google Sheets",
     href: "/dashboard/sheets",
     icon: <FileSpreadsheet className="w-5 h-5" />,
+    badge: "Coming Soon",
   },
   {
     name: "Outreach",
     href: "/dashboard/outreach",
     icon: <MessageSquare className="w-5 h-5" />,
-    badge: "New",
+    badge: "Coming Soon",
   },
   {
     name: "Settings",
@@ -68,7 +69,7 @@ export function Sidebar() {
       className={cn(
         "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white/80 backdrop-blur-xl border-r border-neutral-200/50",
         "transition-all duration-300 ease-in-out z-30",
-        isCollapsed ? "w-[72px]" : "w-64"
+        isCollapsed ? "w-[72px]" : "w-80"
       )}
     >
       <div className="flex flex-col h-full">
@@ -79,7 +80,7 @@ export function Sidebar() {
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-6 w-6 h-6 bg-white border border-neutral-200 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all z-10"
         >
-          <ChevronLeft 
+          <ChevronLeft
             className={cn(
               "w-4 h-4 text-neutral-600 transition-transform duration-300",
               isCollapsed && "rotate-180"
@@ -115,14 +116,14 @@ export function Sidebar() {
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     />
                   )}
-                  
+
                   <span className={cn(
                     "transition-colors duration-200",
                     isActive ? "text-primary-600" : "text-neutral-400 group-hover:text-neutral-600"
                   )}>
                     {item.icon}
                   </span>
-                  
+
                   <AnimatePresence>
                     {!isCollapsed && (
                       <motion.div
@@ -133,14 +134,14 @@ export function Sidebar() {
                       >
                         <span className="font-medium whitespace-nowrap">{item.name}</span>
                         {item.badge && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-secondary-500 to-primary-500 text-white rounded-full">
+                          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-secondary-500 to-primary-500 text-white rounded-full whitespace-nowrap">
                             {item.badge}
                           </span>
                         )}
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  
+
                   {/* Tooltip for collapsed state */}
                   {isCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-neutral-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
@@ -165,7 +166,7 @@ export function Sidebar() {
               <div className="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-xl p-4 relative overflow-hidden">
                 {/* Background decoration */}
                 <div className="absolute top-0 right-0 w-16 h-16 bg-primary-500/10 rounded-full blur-xl" />
-                
+
                 <div className="relative flex items-center gap-2 mb-2">
                   <Zap className="w-4 h-4 text-primary-600" />
                   <span className="text-sm font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">

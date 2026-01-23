@@ -7,11 +7,11 @@
 import { useState, FormEvent, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Confetti from "react-confetti";
-import { 
-  Search, 
-  MapPin, 
-  Target, 
-  Sparkles, 
+import {
+  Search,
+  MapPin,
+  Target,
+  Sparkles,
   Loader2,
   Zap,
   CheckCircle2
@@ -84,6 +84,7 @@ function AnimatedInput({
           onBlur={() => setIsFocused(false)}
           min={min}
           max={max}
+          onWheel={(e) => type === "number" && e.currentTarget.blur()}
           className={cn(
             "w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-200",
             "text-neutral-900 placeholder:text-neutral-400",
@@ -165,7 +166,11 @@ export function ScrapingForm({ onSuccess, onQueryChange, startScrapingAsync, isL
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
-  const [formData, setFormData] = useState<ScrapingFormData>({
+  const [formData, setFormData] = useState<{
+    search_query: string;
+    location: string;
+    target_count: number | string;
+  }>({
     search_query: "",
     location: "",
     target_count: 50,
@@ -190,7 +195,7 @@ export function ScrapingForm({ onSuccess, onQueryChange, startScrapingAsync, isL
       showToast.error("Please enter a search query");
     }
 
-    if (formData.target_count < 1 || formData.target_count > 500) {
+    if (Number(formData.target_count) < 1 || Number(formData.target_count) > 500) {
       newErrors.target_count = "Target count must be between 1 and 500";
     }
 
@@ -213,7 +218,7 @@ export function ScrapingForm({ onSuccess, onQueryChange, startScrapingAsync, isL
 
     console.log("[ScrapingForm] Starting scrape with query:", searchQuery);
     showToast.loading("Starting scrape...");
-    
+
     // Notify parent of query change
     if (onQueryChange) {
       onQueryChange(searchQuery);
@@ -222,7 +227,7 @@ export function ScrapingForm({ onSuccess, onQueryChange, startScrapingAsync, isL
     // Use async scraping with progress tracking
     const result = await startScrapingAsync({
       search_query: searchQuery,
-      target_count: formData.target_count,
+      target_count: Number(formData.target_count),
       headless: true,
     });
 
@@ -318,12 +323,19 @@ export function ScrapingForm({ onSuccess, onQueryChange, startScrapingAsync, isL
           min={1}
           max={500}
           value={formData.target_count}
-          onChange={(e) =>
+          onChange={(e) => {
+            const val = e.target.value;
+            // Allow empty string for backspacing
+            if (val === "") {
+              setFormData({ ...formData, target_count: "" });
+              return;
+            }
+            // Otherwise parse int
             setFormData({
               ...formData,
-              target_count: parseInt(e.target.value) || 50,
-            })
-          }
+              target_count: parseInt(val),
+            });
+          }}
           error={errors.target_count}
         />
 
@@ -357,7 +369,7 @@ export function ScrapingForm({ onSuccess, onQueryChange, startScrapingAsync, isL
         >
           {/* Shimmer effect */}
           <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-          
+
           <span className="relative flex items-center justify-center gap-2">
             {isLoading ? (
               <>

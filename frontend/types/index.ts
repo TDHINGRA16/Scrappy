@@ -51,7 +51,7 @@ export interface ScrapeProgress {
 
 // Google Sheets Types
 export interface SaveToSheetsRequest {
-  leads: Lead[];
+  results: Lead[];
   spreadsheet_id?: string;
   sheet_name?: string;
 }
@@ -126,6 +126,7 @@ export interface GoogleCallbackResponse {
 export interface SaveToGoogleSheetsRequest {
   spreadsheet_id?: string;
   sheet_name?: string;
+  query?: string;  // Search query for naming the spreadsheet
   data: (string | number | null)[][];
 }
 

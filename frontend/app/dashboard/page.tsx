@@ -7,14 +7,14 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
-import { 
-  Users, 
-  Phone, 
-  Globe, 
-  Clock, 
-  Sparkles, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  Users,
+  Phone,
+  Globe,
+  Clock,
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
   X,
   Zap,
   TrendingUp,
@@ -28,6 +28,7 @@ import { ProgressBar } from "@/components/scraping/ProgressBar";
 import { ScrapeProgress } from "@/components/scraping";
 import { useScraping } from "@/hooks/useScraping";
 import { useAuth } from "@/hooks/useAuth";
+import { useGoogleSheets } from "@/hooks/useGoogleSheets";
 import { apiClient } from "@/lib/api-client";
 import { showToast } from "@/lib/toast";
 import { AnimatedCard } from "@/components/ui/animated-card";
@@ -67,8 +68,8 @@ function StatCard({ title, value, icon, color, suffix = "", delay = 0 }: StatCar
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ 
-        duration: 0.5, 
+      transition={{
+        duration: 0.5,
         delay,
         type: "spring",
         stiffness: 100
@@ -82,7 +83,7 @@ function StatCard({ title, value, icon, color, suffix = "", delay = 0 }: StatCar
           "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r",
           colorStyles[color]
         )} />
-        
+
         {/* Background glow on hover */}
         <div className={cn(
           "absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300 bg-gradient-to-br",
@@ -184,12 +185,13 @@ export default function DashboardPage() {
     error,
     lastScrapeResult,
     scrapeId,
-    saveToSheets,
     clearError,
     handleAsyncComplete,
     handleAsyncError,
     startScrapingAsync,
   } = useScraping();
+
+  const { saveToSheets: saveToGoogleSheets } = useGoogleSheets();
 
   // Debug: log leads state changes
   useEffect(() => {
@@ -205,7 +207,7 @@ export default function DashboardPage() {
   }, [scrapeId, isLoading]);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("online");
   const [currentQuery, setCurrentQuery] = useState<string>("");
   const [seenPlacesCount, setSeenPlacesCount] = useState<number>(0);
 
@@ -220,18 +222,7 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Check backend health on mount
-  useEffect(() => {
-    const checkHealth = async () => {
-      const response = await apiClient.healthCheck();
-      setBackendStatus(response.error ? "offline" : "online");
-      
-      if (!response.error) {
-        showToast.success("Connected to backend successfully");
-      }
-    };
-    checkHealth();
-  }, []);
+
 
   // Fetch seen places count for dedup display
   useEffect(() => {
@@ -252,15 +243,19 @@ export default function DashboardPage() {
   const handleSaveToSheets = async () => {
     setIsSaving(true);
     showToast.loading("Saving to Google Sheets...");
-    
-    const result = await saveToSheets();
+
+    // Use integration service with query name
+    // Use currentQuery as fallback if lastScrapeResult is cleared/not available
+    const queryName = lastScrapeResult?.query || currentQuery;
+    const result = await saveToGoogleSheets(leads, queryName);
+
     setIsSaving(false);
     showToast.dismiss();
 
     if (result) {
       showToast.success(`Successfully saved ${result.rows_added} leads to Google Sheets!`);
     } else {
-      showToast.error("Failed to save to Google Sheets");
+      showToast.error("Failed to save to Google Sheets. Please ensure you have connected your account.");
     }
   };
 
@@ -310,7 +305,7 @@ export default function DashboardPage() {
               Extract high-quality business leads from Google Maps
             </p>
           </div>
-          <StatusBadge status={backendStatus} />
+
         </div>
       </motion.div>
 
@@ -377,8 +372,8 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-6">
-              <ScrapingForm 
-                onQueryChange={setCurrentQuery} 
+              <ScrapingForm
+                onQueryChange={setCurrentQuery}
                 startScrapingAsync={startScrapingAsync}
                 isLoading={isLoading}
                 progress={progress}
@@ -491,8 +486,8 @@ export default function DashboardPage() {
                         <div>
                           <h2 className="text-lg font-semibold text-neutral-900">Results</h2>
                           <p className="text-sm text-neutral-500">
-                            {leads.length > 0 
-                              ? `${leads.length} leads found` 
+                            {leads.length > 0
+                              ? `${leads.length} leads found`
                               : "No leads yet - start scraping!"}
                           </p>
                         </div>

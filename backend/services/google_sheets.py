@@ -64,15 +64,45 @@ class GoogleSheetsService:
         if not self.credentials_path:
             raise ValueError("Google Sheets credentials path not configured")
         
+        # Helper to validate and load credentials dict
+        def load_creds_from_info(info):
+            # Check for OAuth client credentials (web/installed) which are invalid for service account auth
+            if 'web' in info or 'installed' in info:
+                raise ValueError(
+                    "Error: You provided OAuth Client credentials (type='web' or 'installed'), "
+                    "but this backend service requires a Service Account (type='service_account').\n"
+                    "Solution:\n"
+                    "1. Use the 'Connect' button in the frontend Dashboard (recommended for personal accounts).\n"
+                    "2. Or generate a Service Account Key in Google Cloud Console and use that JSON file."
+                )
+            return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+
+        # 1. Try to parse credentials_path as a JSON string first
+        if self.credentials_path.strip().startswith('{'):
+            try:
+                creds_dict = json.loads(self.credentials_path)
+                return load_creds_from_info(creds_dict)
+            except json.JSONDecodeError:
+                # If it's not valid JSON, treat it as a file path
+                pass
+        
+        # 2. Treat as file path
         creds_path = Path(self.credentials_path)
         if not creds_path.exists():
+            # If the path looks like JSON (long string starting with {), it might be a copy-paste error
+            if self.credentials_path.strip().startswith('{'):
+                 raise ValueError("Invalid JSON format in credential environment variable.")
             raise FileNotFoundError(f"Credentials file not found: {self.credentials_path}")
         
-        credentials = service_account.Credentials.from_service_account_file(
-            str(creds_path),
-            scopes=SCOPES
-        )
-        return credentials
+        # 3. Read file and validate content
+        with open(creds_path, 'r') as f:
+            try:
+                file_content = json.load(f)
+                # We reuse the logic by passing the dict, instead of from_service_account_file directly,
+                # so we can validate the type first.
+                return load_creds_from_info(file_content)
+            except json.JSONDecodeError:
+                raise ValueError(f"File {self.credentials_path} contains invalid JSON.")
     
     def _init_service(self):
         """Initialize the Google Sheets API service"""
