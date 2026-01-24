@@ -20,11 +20,11 @@
     "gsap": "^3.12.2",
     "kysely": "^0.28.10",
     "lucide-react": "^0.562.0",
-    "next": "15.0.0",
+    "next": "15.0.5",
     "pg": "^8.17.2",
-    "react": "19.0.0",
+    "react": "18.3.1",
     "react-confetti": "^6.4.0",
-    "react-dom": "19.0.0",
+    "react-dom": "18.3.1",
     "react-hot-toast": "^2.6.0",
     "tailwind-merge": "^2.1.0",
     "zustand": "^4.4.7"
@@ -36,7 +36,7 @@
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.55.0",
-    "eslint-config-next": "15.0.0",
+    "eslint-config-next": "15.0.5",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.3.0"
