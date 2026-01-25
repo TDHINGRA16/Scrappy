@@ -53,6 +53,7 @@ def create_tables():
     from models.user import User  # Import to register model
     from models.user_integration import UserIntegration  # Import for integration tables
     from models.scrape_history import UserPlace, ScrapeSession, UserGoogleSheet  # History/dedup tables
+    from models.scrape_cursor import ScrapeSessionCursor  # Cursor-based pagination
     Base.metadata.create_all(bind=engine)
     logger.info("✅ Database tables created/verified")
 

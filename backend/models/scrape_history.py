@@ -46,6 +46,8 @@ class UserPlace(Base):
     
     # Query tracking
     query_hash = Column(String(255), nullable=True)  # query_YYYYMMDD
+    # Normalized query for semantic grouping
+    query_normalized = Column(String(500), nullable=True, index=True)
     
     # Timestamps
     first_seen = Column(DateTime, default=datetime.utcnow)
@@ -57,6 +59,7 @@ class UserPlace(Base):
         UniqueConstraint('user_id', 'place_id', name='uix_user_place'),
         Index('idx_user_places_lookup', 'user_id', 'place_id'),
         Index('idx_user_query_hash', 'user_id', 'query_hash'),
+        Index('idx_user_query_normalized', 'user_id', 'query_normalized'),
     )
     
     def __repr__(self):
@@ -79,6 +82,7 @@ class ScrapeSession(Base):
     # Query info
     query = Column(String(500), nullable=False)
     query_hash = Column(String(255), nullable=True)
+    query_normalized = Column(String(500), nullable=True, index=True)
     
     # Results summary
     total_found = Column(Integer, default=0)        # Cards found before dedup

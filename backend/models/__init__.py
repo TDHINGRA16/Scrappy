@@ -12,6 +12,7 @@ from .user import User
 from .better_auth import BetterAuthSession, BetterAuthUser
 from .user_integration import UserIntegration
 from .scrape_history import UserPlace, ScrapeSession, UserGoogleSheet
+from .scrape_cursor import ScrapeSessionCursor
 
 # Export all models
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "UserPlace",
     "ScrapeSession",
     "UserGoogleSheet",
+    "ScrapeSessionCursor",
 ]

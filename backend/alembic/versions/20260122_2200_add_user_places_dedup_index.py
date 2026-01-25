@@ -1,7 +1,7 @@
 """Add index for user_places deduplication performance
 
-Revision ID: add_user_places_dedup_index
-Revises: fix_user_integrations_fk
+Revision ID: 20260122_2200
+Revises: 20260122_2120
 Create Date: 2026-01-22 22:00:00
 
 This index dramatically improves deduplication lookup performance:
@@ -15,8 +15,8 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision = 'add_user_places_dedup_index'
-down_revision = 'fix_user_integrations_fk'
+revision = '20260122_2200'
+down_revision = '20260122_2120'
 branch_labels = None
 depends_on = None
 

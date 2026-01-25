@@ -25,6 +25,14 @@ from playwright.async_api import async_playwright, Browser, Page, BrowserContext
 from config import settings, SELECTORS, GOOGLE_MAPS_SEARCH_URL, RATE_LIMIT
 from services.deduplication import PlaceIDDeduplicationService
 
+# Cursor support import (for cursor-based pagination)
+try:
+    from models.scrape_cursor import ScrapeSessionCursor
+    CURSOR_SUPPORT_ENABLED = True
+except ImportError:
+    CURSOR_SUPPORT_ENABLED = False
+    ScrapeSessionCursor = None
+
 # Progress tracker import (optional - may not be used in sync mode)
 try:
     from services.progress_tracker import update_scrape_progress
@@ -80,6 +88,10 @@ class GoogleMapsScraper:
         
         # Progress tracking (set by routes for async scrapes)
         self._progress_scrape_id: Optional[str] = None
+        
+        # Cursor-based pagination support
+        self._cursor: Optional[Any] = None  # ScrapeSessionCursor instance
+        self._cursor_state: Dict[str, Any] = {}  # Current cursor state to save
         
         # Statistics
         self.stats = {
@@ -188,7 +200,8 @@ class GoogleMapsScraper:
         query: str,
         target_count: int = None,
         max_scrolls: int = None,
-        seen_places: Optional[set] = None
+        seen_places: Optional[set] = None,
+        cursor: Optional[Any] = None
     ) -> List[Dict[str, Any]]:
         """
         Scrape Google Maps for a single query.
@@ -198,6 +211,7 @@ class GoogleMapsScraper:
             target_count: How many unique cards to collect
             max_scrolls: Max scroll attempts
             seen_places: Set of Place IDs user has already scraped (for deduplication)
+            cursor: ScrapeSessionCursor instance for resuming from previous position
             
         Returns:
             List of unique business dictionaries
@@ -205,12 +219,14 @@ class GoogleMapsScraper:
         Flow:
             1. Open Google Maps
             2. Search query
-            3. Scroll to load cards (continue until stale)
-            4. Collect ALL unique Place IDs from cards
-            5. Filter out already-seen places (if seen_places provided)
-            6. In parallel (4-5 at a time), extract details
-            7. Deduplicate by Place ID
-            8. Return results
+            3. If cursor exists, restore scroll position (skip already-seen cards)
+            4. Scroll to load cards (continue until stale)
+            5. Collect ALL unique Place IDs from cards
+            6. Filter out already-seen places (if seen_places provided)
+            7. In parallel (4-5 at a time), extract details
+            8. Deduplicate by Place ID
+            9. Save cursor state for next resume
+            10. Return results
         """
         target_count = target_count or settings.DEFAULT_TARGET_COUNT
         seen_places = seen_places or set()
@@ -291,6 +307,21 @@ class GoogleMapsScraper:
             # Accept cookies if popup appears
             await self._handle_consent_popup(page)
             
+            # Store cursor reference for later updates
+            self._cursor = cursor
+            cursor_restored = False
+            
+            # If cursor exists, try to restore scroll position (skip already-seen cards)
+            if cursor and hasattr(cursor, 'last_scroll_position') and cursor.last_scroll_position > 0:
+                logger.info(f"📍 Cursor found: {cursor.cards_collected} cards previously collected")
+                self._update_progress(
+                    phase=f"Resuming from position {cursor.cards_collected}...",
+                    progress_percent=13
+                )
+                cursor_restored = await self._restore_scroll_position(page, cursor)
+                if cursor_restored:
+                    logger.info(f"✅ Resumed from cursor: skipping first {cursor.cards_collected} cards")
+            
             # Collect card links by scrolling
             # Collect MORE than target to account for dedup filtering (50% extra if we have seen places)
             buffer_multiplier = 1.5 if seen_places else 1.2
@@ -307,10 +338,32 @@ class GoogleMapsScraper:
                 page,
                 target_count=collection_target,
                 max_scrolls=max_scrolls,
-                seen_places=seen_places
+                seen_places=seen_places,
+                cursor=cursor
             )
             
+            # Save cursor state after collection (for next resume)
+            final_scroll_position = await self._get_current_scroll_position(page)
+            last_place_id = None
+            if card_links:
+                # Get the last place ID for anchor verification on next resume
+                last_place_id = list(card_links.keys())[-1] if card_links else None
+            
+            # Calculate total cards (previous + new)
+            previous_cards = cursor.cards_collected if cursor else 0
+            total_cards_now = previous_cards + len(card_links)
+            
+            self._cursor_state = {
+                'cards_collected': total_cards_now,
+                'last_scroll_position': final_scroll_position,
+                'last_place_id': last_place_id,
+                'last_card_index': len(card_links) - 1 if card_links else None,
+                'total_scrolls': self.stats['scrolls_performed'],
+                'visible_card_count': len(card_links)
+            }
+            
             logger.info(f"✅ Collected {len(card_links)} unique card links")
+            logger.info(f"📍 Cursor state: {total_cards_now} total cards, position {final_scroll_position}px")
             self.stats['cards_found'] = len(card_links) + self.stats.get('skipped_duplicates', 0)
             
             # Extract details from cards in parallel
@@ -364,12 +417,122 @@ class GoogleMapsScraper:
         except Exception:
             pass  # Popup might not appear
     
+    async def _restore_scroll_position(
+        self,
+        page: Page,
+        cursor: Any
+    ) -> bool:
+        """
+        Restore scroll position from cursor.
+        Jump directly to where we left off instead of scrolling from 0.
+        
+        NOTE: We do NOT try to find anchor cards anymore because Google Maps
+        dynamically re-renders cards and the card at position X may not be
+        the same card that was there before. Direct scroll position works better.
+        
+        Args:
+            page: Playwright page object
+            cursor: ScrapeSessionCursor instance with scroll position
+            
+        Returns:
+            True if position restored successfully, False otherwise
+        """
+        if not cursor or not hasattr(cursor, 'last_scroll_position'):
+            return False
+        
+        scroll_position = cursor.last_scroll_position or 0
+        if scroll_position <= 0:
+            logger.info("📍 No scroll position to restore (starting fresh)")
+            return False
+        
+        try:
+            logger.info(f"📍 Restoring scroll position: {scroll_position}px")
+            
+            # JavaScript to restore scroll position directly
+            await page.evaluate(f"""
+                async () => {{
+                    const container = document.querySelector('div[role="feed"]');
+                    if (container) {{
+                        // Scroll to saved position
+                        container.scrollTop = {scroll_position};
+                        
+                        // Wait for lazy-loaded cards to appear
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        return true;
+                    }} else {{
+                        // Fallback to window scroll
+                        window.scrollTo(0, {scroll_position});
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        return false;
+                    }}
+                }}
+            """)
+            
+            # Verify scroll worked (within tolerance)
+            actual_scroll = await self._get_current_scroll_position(page)
+            scroll_diff = abs(actual_scroll - scroll_position)
+            
+            if scroll_diff < 200:  # Within 200px tolerance
+                logger.info(f"✅ Scroll position restored: {actual_scroll}px (target: {scroll_position}px)")
+            else:
+                logger.warning(f"⚠️ Scroll restoration inexact: {actual_scroll}px vs target {scroll_position}px")
+            
+            # Wait for any AJAX loading to complete
+            try:
+                await page.wait_for_load_state('networkidle', timeout=5000)
+            except Exception:
+                pass
+            
+            await self._random_delay(1.0, 2.0)
+            return True
+            
+        except Exception as e:
+            logger.warning(f"Failed to restore scroll position: {e}")
+            return False
+    
+    async def _get_current_scroll_position(self, page: Page) -> int:
+        """
+        Get current scroll position for cursor saving.
+        
+        Args:
+            page: Playwright page object
+            
+        Returns:
+            Current scroll position in pixels
+        """
+        try:
+            position = await page.evaluate("""
+                () => {
+                    const container = document.querySelector('div[role="feed"]');
+                    if (container) {
+                        return container.scrollTop;
+                    }
+                    return window.scrollY || document.documentElement.scrollTop || 0;
+                }
+            """)
+            return int(position) if position else 0
+        except Exception as e:
+            logger.debug(f"Failed to get scroll position: {e}")
+            return 0
+    
+    def get_cursor_state(self) -> Dict[str, Any]:
+        """
+        Get current cursor state for saving.
+        Called after scrape to persist cursor.
+        
+        Returns:
+            Dictionary with cursor state data
+        """
+        return self._cursor_state.copy()
+    
     async def _collect_unique_card_links(
         self,
         page: Page,
         target_count: int,
         max_scrolls: int = 50,
-        seen_places: Optional[set] = None
+        seen_places: Optional[set] = None,
+        cursor: Optional[Any] = None
     ) -> Dict[str, Tuple[str, Optional[str]]]:
         """
         Scroll through results and collect unique card links.
@@ -394,7 +557,12 @@ class GoogleMapsScraper:
         seen_places = seen_places or set()
         stale_count = 0
         consecutive_seen_duplicates = 0  # Track consecutive cards that were already seen
-        max_consecutive_seen = 15  # Stop if we see 15+ cards in a row that user already has
+        # When resuming from a cursor, be far more tolerant of consecutive seen cards
+        if cursor:
+            # Large threshold to avoid early exit when resuming
+            max_consecutive_seen = max(100, int(target_count * 3))
+        else:
+            max_consecutive_seen = 15  # Stop if we see 15+ cards in a row that user already has
         
         for scroll_num in range(max_scrolls):
             self.stats['scrolls_performed'] += 1
@@ -458,15 +626,37 @@ class GoogleMapsScraper:
             except Exception as e:
                 logger.warning(f"Error collecting cards on scroll {scroll_num}: {e}")
             
-            # Early exit: Too many consecutive seen duplicates
+            # Early exit / skip-forward behavior
             if consecutive_seen_duplicates >= max_consecutive_seen:
-                logger.info(f"⛔ Early exit: {consecutive_seen_duplicates} consecutive cards already in user's database")
-                logger.info(f"   → Skipped {self.stats.get('skipped_duplicates', 0)} duplicates, found {len(card_links)} new")
-                self._update_progress(
-                    phase=f"Stopped early - {len(card_links)} new businesses found",
-                    cards_found=len(card_links)
-                )
-                break
+                # If we are resuming from a cursor, try jumping forward instead of giving up
+                if cursor:
+                    logger.info(f"🔁 Hit {consecutive_seen_duplicates} consecutive seen cards while resuming; performing a jump-forward to find new results")
+                    try:
+                        # Try a larger scroll jump to move past cached results
+                        results_container = await page.locator('div[role="feed"]').first
+                        if await results_container.count() > 0:
+                            await results_container.evaluate('el => el.scrollBy(0, 3000)')
+                        else:
+                            await page.evaluate('window.scrollBy(0, 3000)')
+                        await self._random_delay(1.0, 2.0)
+                        consecutive_seen_duplicates = 0
+                        # Continue to next iteration without breaking
+                    except Exception as jump_err:
+                        logger.debug(f"Jump-forward failed: {jump_err}")
+                        logger.info(f"⛔ Early exit after failed jump: {consecutive_seen_duplicates} consecutive seen cards")
+                        self._update_progress(
+                            phase=f"Stopped early - {len(card_links)} new businesses found",
+                            cards_found=len(card_links)
+                        )
+                        break
+                else:
+                    logger.info(f"⛔ Early exit: {consecutive_seen_duplicates} consecutive cards already in user's database")
+                    logger.info(f"   → Skipped {self.stats.get('skipped_duplicates', 0)} duplicates, found {len(card_links)} new")
+                    self._update_progress(
+                        phase=f"Stopped early - {len(card_links)} new businesses found",
+                        cards_found=len(card_links)
+                    )
+                    break
             
             # Check for stale scroll
             cards_after = len(card_links)
@@ -1094,10 +1284,11 @@ class GoogleMapsScraper:
         return None
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get scraping statistics"""
+        """Get scraping statistics including cursor state"""
         return {
             **self.stats,
-            'dedup_stats': self.dedup_service.get_stats()
+            'dedup_stats': self.dedup_service.get_stats(),
+            'cursor_state': self._cursor_state if self._cursor_state else None
         }
 
 

@@ -17,6 +17,7 @@ from sqlalchemy import func, desc
 from sqlalchemy.dialects.postgresql import insert
 
 from models.scrape_history import UserPlace, ScrapeSession, UserGoogleSheet
+from services.query_normalizer import QueryNormalizer, normalize_query, get_query_hash
 
 logger = logging.getLogger(__name__)
 
@@ -33,23 +34,47 @@ class HistoryService:
     
     def __init__(self, db: Session):
         self.db = db
+        self.normalizer = QueryNormalizer()
     
     # ==================== DEDUPLICATION ====================
     
-    def get_user_seen_places(self, user_id: str) -> Set[str]:
+    def get_user_seen_places(
+        self, 
+        user_id: str, 
+        query: Optional[str] = None
+    ) -> Set[str]:
         """
-        Get ALL Place IDs this user has ever scraped.
+        Get Place IDs this user has scraped.
+        
+        Args:
+            user_id: User identifier
+            query: Optional - if provided, only return places for this normalized query.
+                   This gives CORRECT duplicate counts (not 565, but 50 for that query).
         
         Used for deduplication BEFORE extraction.
         Query is indexed, returns in ~2ms for 10K places.
         """
         try:
-            rows = self.db.query(UserPlace.place_id).filter(
+            base_query = self.db.query(UserPlace.place_id).filter(
                 UserPlace.user_id == user_id
-            ).all()
+            )
             
+            # If query provided, filter by normalized query for accurate counts
+            if query:
+                query_normalized = normalize_query(query)
+                base_query = base_query.filter(
+                    UserPlace.query_normalized == query_normalized
+                )
+                logger.info(f"🔍 Filtering places by normalized query: '{query_normalized}'")
+            
+            rows = base_query.all()
             places = {row[0] for row in rows}
-            logger.debug(f"📊 User {user_id[:8]}... has {len(places)} previously scraped places")
+            
+            if query:
+                logger.info(f"📊 User {user_id[:8]}... has {len(places)} places for query '{query}'")
+            else:
+                logger.debug(f"📊 User {user_id[:8]}... has {len(places)} total scraped places")
+            
             return places
             
         except Exception as e:
@@ -66,6 +91,11 @@ class HistoryService:
         """
         Record new Place IDs for user (UPSERT).
         
+        Now stores NORMALIZED query so variations like:
+        - "stationery in amritsar"
+        - "amritsar stationary"
+        All map to same query_normalized for accurate dedup.
+        
         Args:
             user_id: User identifier
             place_ids: List of Place IDs to record
@@ -79,17 +109,19 @@ class HistoryService:
             return 0
         
         query_hash = self._make_query_hash(query)
+        query_normalized = normalize_query(query)  # KEY FIX: Store normalized
         cids = cids or {}
         new_count = 0
         
         try:
             for place_id in place_ids:
-                # Use PostgreSQL UPSERT
+                # Use PostgreSQL UPSERT with normalized query
                 stmt = insert(UserPlace).values(
                     user_id=user_id,
                     place_id=place_id,
                     cid=cids.get(place_id),
                     query_hash=query_hash,
+                    query_normalized=query_normalized,  # Store normalized query
                     first_seen=datetime.utcnow(),
                     last_seen=datetime.utcnow(),
                     scraped_count=1
@@ -97,7 +129,9 @@ class HistoryService:
                     index_elements=['user_id', 'place_id'],
                     set_={
                         'last_seen': datetime.utcnow(),
-                        'scraped_count': UserPlace.scraped_count + 1
+                        'scraped_count': UserPlace.scraped_count + 1,
+                        # Update query_normalized if it was null before
+                        'query_normalized': query_normalized
                     }
                 )
                 
@@ -106,7 +140,7 @@ class HistoryService:
                     new_count += 1
             
             self.db.commit()
-            logger.info(f"📝 Recorded {new_count} places for user {user_id[:8]}...")
+            logger.info(f"📝 Recorded {new_count} places for user {user_id[:8]}... (query_normalized: '{query_normalized}')")
             return new_count
             
         except Exception as e:
@@ -132,12 +166,15 @@ class HistoryService:
         query: str,
         sheet_id: Optional[str] = None
     ) -> ScrapeSession:
-        """Create a new scrape session record."""
+        """Create a new scrape session record with normalized query."""
         try:
+            query_normalized = normalize_query(query)
+            
             session = ScrapeSession(
                 user_id=user_id,
                 query=query,
                 query_hash=self._make_query_hash(query),
+                query_normalized=query_normalized,  # Store normalized
                 sheet_id=sheet_id,
                 status='running'
             )
@@ -145,7 +182,7 @@ class HistoryService:
             self.db.commit()
             self.db.refresh(session)
             
-            logger.info(f"📋 Created scrape session {session.id}")
+            logger.info(f"📋 Created scrape session {session.id} (query_normalized: '{query_normalized}')")
             return session
             
         except Exception as e:

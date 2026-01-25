@@ -1,6 +1,6 @@
 """fix user_integrations foreign key to reference user table
 
-Revision ID: fix_user_integrations_fk
+Revision ID: 20260122_2120
 Revises: 
 Create Date: 2026-01-22 21:20:00.000000
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
-revision: str = 'fix_user_integrations_fk'
+revision: str = '20260122_2120'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
